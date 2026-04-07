@@ -63,3 +63,9 @@
   - Added `-webkit-overflow-scrolling: touch` to allow natural scroll momentum on iOS.
   - Implemented tactile horizontal sliding on the screen to dismiss the side navigation window in `script.js`.
 - Applied global mapping to `img/Favicon.png`.
+
+### Update 005 - Node.js Express Migration
+- **Architectural Shift:** Moved from vanilla `file://` static loading to a Node.js web server.
+- **Dependencies:** Initialized `package.json` with `express` package.
+- **Re-structuring:** Shifted all HTML, CSS, JS, and `img/` media into a `public/` directory separating backend configuration from frontend logic.
+- **Backend:** Created `server.js` listening on `PORT 3000` executing `express.static()` to natively decouple static consumption routing.

@@ -105,13 +105,23 @@ Presente en todas las páginas:
 
 ## ⚙️ Tecnologías Utilizadas
 
-- **HTML5** — Estructura semántica
-- **CSS3** — Animaciones, glassmorphism, variables CSS, keyframes
-- **JavaScript (ES6+)** — DOM manipulation, localStorage, eventos de click
-- **Google Fonts** — Fuente Outfit
+- **Frontend:** HTML5, CSS3, JavaScript (ES6+), Google Fonts
+- **Backend:** Node.js, Express (Sirve el directorio estático `public/`)
+- **Almacenamiento (Prototipo):** `localStorage` (sin base de datos)
 
 ---
 
 ## 🚀 Cómo Ejecutar
 
-Simplemente abre `index.html` en cualquier navegador moderno. No requiere servidor ni instalación.
+La aplicación se ha migrado a un servidor Node.js escalable, por lo que los archivos del frontend se encuentran aislados en la carpeta `public/`.
+
+1. **Instalar dependencias:**
+   ```bash
+   npm install
+   ```
+2. **Iniciar el Servidor Express:**
+   ```bash
+   npm start
+   ```
+3. **Acceso:**
+   Abre tu navegador web y entra a `http://localhost:3000`
