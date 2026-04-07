@@ -69,3 +69,14 @@
 - **Dependencies:** Initialized `package.json` with `express` package.
 - **Re-structuring:** Shifted all HTML, CSS, JS, and `img/` media into a `public/` directory separating backend configuration from frontend logic.
 - **Backend:** Created `server.js` listening on `PORT 3000` executing `express.static()` to natively decouple static consumption routing.
+
+### Update 006 - Advanced Admin Dashboard
+- **Data Persistence:** Re-architected Event Controller logic separating local hardcoded arrays into cached arrays stored inside `localStorage` mimicking a pseudo-backend DB for events CRUD operations.
+- **HTML/CSS Layout Synchronization:** Extracted `.events-wrapper` and `.events-list` custom layouts out of `eventos.html` directly into global `style.css` acting as a single source of truth for component lists.
+- **Admin Core Features (`admin.html`):**
+  - Inherited global List layout identical to `eventos.html` applying both Sorting limits (ASC/DESC Name/Date) and a new dropdown `filter-importance` (Alta/Media/Baja).
+  - Designed custom empty-square Checkboxes implementing strict Glassmorphism CSS removing browser-OS native appearance.
+  - Implemented `.btn-delete-icon` utilizing `img/botonborrar.png` inside a solid #e11d48 container.
+  - Built bulk deletion actions grouping `checked` attributes to unveil a dynamic `.btn-danger` bulk manager.
+  - Interactive Modal element (`<dialog id="confirm-modal">`) rendering visual Glassmorphism validations preventing un-warranted delete actions.
+  - Activated HTML5 native global `draggable` logic with `dragstart` / `drop` logic enabling persistent user reordering array swaps. Visual rotation matrix triggers `3deg` mapping to give realistic physics to card pickups via CSS.

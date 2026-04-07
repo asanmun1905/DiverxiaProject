@@ -44,6 +44,16 @@ DiverxiaProject/
 
 ---
 
+## 🛠 Panel de Administración Avanzado
+
+El archivo `admin.html` actúa como un Dashboard interactivo que incluye las siguientes mecánicas:
+- **Arrastrar y Soltar (Drag & Drop):** Integración nativa HTML5 para reordenar la lista de eventos haciendo click en la tarjeta y arrastrándola con físicas de rotación.
+- **Gestión Masiva:** Checkboxes customizados (estilo Glassmorphism vacío) que despliegan barras de herramientas superiores `.btn-danger` al seleccionar múltiples elementos simultáneamente.
+- **Ventana de Confirmación Seguro:** Elemento HTML `<dialog>` que intercepta la pantalla entera borrosificando el fondo para requerir confirmación antes de borrar cualquier dato.
+- **Clasificación por Importancia:** Filtros integrados según prioridad (`Alta`, `Media`, `Baja`) que se combinan con la ordenación alfanumérica y cronológica.
+
+---
+
 ## 🔐 Autenticación Simulada
 
 Sin base de datos. El rol se almacena en `localStorage` del navegador:
