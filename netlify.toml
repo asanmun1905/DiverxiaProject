@@ -1,0 +1,12 @@
+[build]
+  # Directorio que Netlify va a subir a producción
+  publish = "public"
+  
+  # Como el proyecto de momento no requiere compilar React/Vue, etc. no hay comando de build
+  command = ""
+
+[[redirects]]
+  # Redirigir siempre cualquier ruta no encontrada al index (suele ser útil para SPAs o evitar errores 404 estáticos)
+  from = "/*"
+  to = "/index.html"
+  status = 200
