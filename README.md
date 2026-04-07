@@ -123,15 +123,4 @@ Presente en todas las páginas:
 
 ## 🚀 Cómo Ejecutar
 
-La aplicación se ha migrado a un servidor Node.js escalable, por lo que los archivos del frontend se encuentran aislados en la carpeta `public/`.
-
-1. **Instalar dependencias:**
-   ```bash
-   npm install
-   ```
-2. **Iniciar el Servidor Express:**
-   ```bash
-   npm start
-   ```
-3. **Acceso:**
-   Abre tu navegador web y entra a `http://localhost:3000`
+La aplicación se ha desplegado con Netlify para un acceso sencillo que no requiera de ninguna instalación previa. Para acceder a la aplicación podéis entrar al siguiente enlace: https://diverxia-event.netlify.app/
