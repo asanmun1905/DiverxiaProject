@@ -367,6 +367,246 @@ footer {
     z-index: 10;
 }
 
+/* ── Admin Management Features ── */
+.admin-toolbar {
+    display: flex;
+    gap: 15px;
+    align-items: center;
+}
+
+.btn-danger {
+    background-color: transparent;
+    color: #ff5555;
+    border: 1px solid #ff5555;
+    font-weight: 600;
+    cursor: pointer;
+    border-radius: 8px;
+    padding: 8px 16px;
+    transition: all 0.2s;
+    font-size: 0.9rem;
+}
+
+.btn-danger:hover {
+    background-color: #ff5555;
+    color: white;
+}
+
+.select-filter {
+    background: rgba(255,255,255,0.05);
+    border: 1px solid rgba(255,255,255,0.15);
+    color: var(--light);
+    padding: 8px 16px;
+    border-radius: 8px;
+    font-family: 'Outfit', sans-serif;
+    outline: none;
+    cursor: pointer;
+}
+
+.select-filter option {
+    background: var(--dark);
+    color: var(--light);
+}
+
+.card-content-wrapper {
+    display: flex;
+    align-items: center;
+    gap: 15px;
+    width: 100%;
+}
+
+.drag-handle {
+    cursor: grab;
+    color: rgba(235,235,235,0.3);
+    font-size: 24px;
+    display: flex;
+    align-items: center;
+    transition: color 0.2s;
+    margin-left: auto; /* Push to right extreme */
+}
+
+/* ──────────────────────────────────────────
+   Admin Custom Glassmorphism Checkbox
+─────────────────────────────────────────── */
+.card-checkbox {
+    appearance: none;
+    -webkit-appearance: none;
+    width: 24px;
+    height: 24px;
+    border: 2px solid rgba(255,255,255,0.3);
+    border-radius: 6px;
+    background: rgba(0,0,0,0.1);
+    cursor: pointer;
+    position: relative;
+    transition: all 0.3s cubic-bezier(0.2, 0.8, 0.2, 1);
+    flex-shrink: 0;
+    margin-right: 15px;
+}
+
+.card-checkbox:hover {
+    border-color: var(--primary);
+    box-shadow: 0 0 10px rgba(49, 183, 219, 0.3);
+}
+
+.card-checkbox:checked {
+    background: var(--primary);
+    border-color: var(--primary);
+    box-shadow: 0 0 15px rgba(49, 183, 219, 0.5);
+}
+
+.card-checkbox:checked::after {
+    content: "✓";
+    position: absolute;
+    top: 50%;
+    left: 50%;
+    transform: translate(-50%, -50%);
+    color: var(--dark);
+    font-weight: 900;
+    font-size: 14px;
+}
+
+/* ──────────────────────────────────────────
+   Admin Delete Neon Image Button
+─────────────────────────────────────────── */
+.btn-delete-icon {
+    width: 34px;
+    height: 34px;
+    border-radius: 8px;
+    background: #e11d48; /* Red intenso solido */
+    border: none;
+    box-shadow: 0 4px 12px rgba(225, 29, 72, 0.25);
+    cursor: pointer;
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    transition: all 0.3s cubic-bezier(0.175, 0.885, 0.32, 1.275);
+    margin: 0 10px;
+    padding: 6px;
+}
+
+.btn-delete-icon img {
+    width: 100%;
+    height: 100%;
+    object-fit: contain;
+    transition: all 0.3s ease;
+    /* Un base suave para la imagen de borrar */
+    filter: drop-shadow(0 0 2px rgba(255, 85, 85, 0.2));
+}
+
+.btn-delete-icon:hover {
+    transform: scale(1.15) translateY(-2px);
+}
+
+.btn-delete-icon:hover img {
+    /* Efecto Neon intenso al hover sobre la imagen roja */
+    filter: drop-shadow(0 0 15px rgba(255, 85, 85, 0.85)) brightness(1.2);
+}
+
+/* Rediseño Botón Masivo - Que combine con el estilo imagen */
+.btn-danger {
+    background-color: #e11d48; /* Red intenso solido */
+    color: white;
+    border: none;
+    font-weight: 600;
+    cursor: pointer;
+    border-radius: 8px;
+    padding: 10px 20px;
+    transition: all 0.3s;
+    font-size: 0.95rem;
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    box-shadow: 0 4px 12px rgba(225, 29, 72, 0.25);
+}
+
+.btn-danger img {
+    width: 20px;
+}
+
+.btn-danger:hover {
+    background-color: #be123c;
+    box-shadow: 0 6px 18px rgba(225, 29, 72, 0.4);
+    transform: translateY(-2px);
+}
+
+.drag-handle:hover {
+    color: var(--primary);
+}
+
+.drag-handle:active {
+    cursor: grabbing;
+}
+
+.event-card.dragging {
+    opacity: 0.6;
+    transform: rotate(3deg) scale(1.02);
+    box-shadow: 0 15px 30px rgba(0,0,0,0.5);
+    border-color: var(--primary);
+    z-index: 100;
+}
+
+.event-actions {
+    display: flex;
+    align-items: center;
+    gap: 20px;
+}
+
+.importance-badge {
+    padding: 4px 8px;
+    border-radius: 6px;
+    font-size: 0.75rem;
+    font-weight: bold;
+    text-transform: uppercase;
+}
+
+.importance-high { background: rgba(255, 85, 85, 0.2); color: #ff5555; }
+.importance-medium { background: rgba(255, 184, 108, 0.2); color: #ffb86c; }
+.importance-low { background: rgba(80, 250, 123, 0.2); color: #50fa7b; }
+
+/* Modal Glassmorphism */
+dialog {
+    margin: auto;
+    background: rgba(37, 41, 48, 0.85);
+    backdrop-filter: blur(24px);
+    -webkit-backdrop-filter: blur(24px);
+    border: 1px solid rgba(255,255,255,0.1);
+    border-radius: 20px;
+    color: var(--light);
+    padding: 30px;
+    width: 90%;
+    max-width: 400px;
+    box-shadow: 0 25px 50px rgba(0,0,0,0.5);
+}
+
+dialog::backdrop {
+    background: rgba(0, 0, 0, 0.6);
+    backdrop-filter: blur(5px);
+}
+
+.modal-content h3 {
+    margin-bottom: 10px;
+    font-size: 1.4rem;
+}
+
+.modal-content p {
+    color: rgba(235,235,235,0.7);
+    margin-bottom: 25px;
+    font-size: 1rem;
+    line-height: 1.4;
+}
+
+.modal-actions {
+    display: flex;
+    justify-content: flex-end;
+    gap: 10px;
+}
+
+.modal-actions .btn {
+    width: auto;
+    padding: 10px 20px;
+    margin: 0;
+    font-size: 1rem;
+}
+
 /* Page content for internal pages */
 .page-content {
     text-align: left;
@@ -377,6 +617,185 @@ footer {
     font-size: 1.2rem;
     line-height: 1.6;
     margin-bottom: 20px;
+}
+
+/* ──────────────────────────────────────────
+   Universal Events Wrapper & Cards Styles 
+   (Shared by eventos.html & admin.html)
+─────────────────────────────────────────── */
+.events-wrapper {
+    width: 100%;
+    max-width: 900px;
+    padding: 20px;
+    animation: fadeIn 0.8s cubic-bezier(0.2, 0.8, 0.2, 1) forwards;
+}
+
+.events-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: flex-end;
+    margin-bottom: 30px;
+    flex-wrap: wrap;
+    gap: 20px;
+}
+
+.events-header h1 {
+    margin-bottom: 0;
+}
+
+/* Filter bar */
+.filter-bar {
+    display: flex;
+    gap: 10px;
+    flex-wrap: wrap;
+    align-items: center;
+}
+
+.filter-btn {
+    background: rgba(255,255,255,0.05);
+    border: 1px solid rgba(255,255,255,0.15);
+    color: var(--light);
+    padding: 9px 18px;
+    border-radius: 30px;
+    font-family: 'Outfit', sans-serif;
+    font-size: 0.9rem;
+    font-weight: 600;
+    cursor: pointer;
+    transition: all 0.25s;
+    display: flex;
+    align-items: center;
+    gap: 6px;
+}
+
+.filter-btn:hover {
+    background: rgba(49, 183, 219, 0.15);
+    border-color: var(--primary);
+    color: var(--primary);
+}
+
+.filter-btn.active {
+    background: var(--primary);
+    border-color: var(--primary);
+    color: var(--dark);
+}
+
+.filter-btn .arrow {
+    font-size: 0.75rem;
+    line-height: 1;
+}
+
+/* Event list scroll */
+.events-list {
+    display: flex;
+    flex-direction: column;
+    gap: 16px;
+    max-height: calc(100vh - 280px);
+    overflow-y: auto;
+    padding-right: 6px;
+    -webkit-overflow-scrolling: touch; 
+    overscroll-behavior-y: contain;
+}
+
+.events-list::-webkit-scrollbar {
+    width: 6px;
+}
+.events-list::-webkit-scrollbar-track {
+    background: rgba(255,255,255,0.03);
+    border-radius: 10px;
+}
+.events-list::-webkit-scrollbar-thumb {
+    background: rgba(49, 183, 219, 0.35);
+    border-radius: 10px;
+}
+.events-list::-webkit-scrollbar-thumb:hover {
+    background: rgba(49, 183, 219, 0.6);
+}
+
+/* Single event card container */
+.event-card {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    background: rgba(255,255,255,0.04);
+    border: 1px solid rgba(255,255,255,0.09);
+    border-radius: 16px;
+    padding: 22px 30px;
+    transition: all 0.3s;
+    gap: 20px;
+    cursor: pointer;
+}
+
+.event-card:hover {
+    background: rgba(49, 183, 219, 0.08);
+    border-color: rgba(49, 183, 219, 0.35);
+    transform: translateX(4px);
+}
+
+.event-card.past {
+    opacity: 0.42;
+    filter: saturate(0.3);
+}
+
+.event-card.past:hover {
+    opacity: 0.6;
+    filter: saturate(0.5);
+}
+
+.event-info {
+    display: flex;
+    flex-direction: column;
+    gap: 5px;
+    flex-grow: 1; /* Para que en Admin la checkbox no lo empuje mal */
+}
+
+.event-title {
+    font-size: 1.15rem;
+    font-weight: 700;
+    color: var(--light);
+    line-height: 1.3;
+}
+
+.event-category {
+    font-size: 0.82rem;
+    font-weight: 600;
+    color: var(--primary);
+    text-transform: uppercase;
+    letter-spacing: 0.08em;
+}
+
+.event-dates {
+    text-align: right;
+    flex-shrink: 0;
+}
+
+.event-date-range {
+    font-size: 0.92rem;
+    font-weight: 600;
+    color: var(--light);
+    white-space: nowrap;
+}
+
+.event-date-range .date-sep {
+    color: rgba(235,235,235,0.4);
+    margin: 0 6px;
+}
+
+.event-status {
+    font-size: 0.75rem;
+    font-weight: 600;
+    margin-top: 5px;
+    text-align: right;
+}
+
+.event-status.active-status { color: #4ade80; }
+.event-status.upcoming-status { color: var(--primary); }
+.event-status.past-status { color: rgba(235,235,235,0.4); }
+
+.no-results {
+    text-align: center;
+    color: rgba(235,235,235,0.4);
+    padding: 60px 0;
+    font-size: 1.1rem;
 }
 
 /* ══════════════════════════════════════════
