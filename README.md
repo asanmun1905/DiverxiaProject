@@ -123,4 +123,4 @@ Presente en todas las páginas:
 
 ## 🚀 Cómo Ejecutar
 
-La aplicación se ha desplegado con Netlify para un acceso sencillo que no requiera de ninguna instalación previa. Para acceder a la aplicación podéis entrar al siguiente enlace: https://diverxia-event.netlify.app/
+La aplicación se ha desplegado con Netlify para un acceso sencillo que no requiera de ninguna instalación previa. Para acceder a la aplicación podéis entrar al siguiente enlace: https://diverxiaevents.netlify.app/
