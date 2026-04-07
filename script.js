@@ -35,7 +35,7 @@ document.addEventListener('DOMContentLoaded', () => {
 
     // Click outside the sidebar → close it
     document.addEventListener('click', (e) => {
-        if (sidebar.classList.contains('open') && !sidebar.contains(e.target)) {
+        if (sidebar.classList.contains('open') && !sidebar.contains(e.target) && !hamburgerHeader.contains(e.target)) {
             closeSidebar();
         }
     });
@@ -44,6 +44,33 @@ document.addEventListener('DOMContentLoaded', () => {
     sidebar.addEventListener('click', (e) => {
         e.stopPropagation();
     });
+
+    // ── Touch swipe support for the Sidebar ────────────────────────────────────
+    let touchStartX = 0;
+    let touchEndX = 0;
+
+    document.addEventListener('touchstart', (e) => {
+        touchStartX = e.changedTouches[0].screenX;
+    }, { passive: true });
+
+    document.addEventListener('touchend', (e) => {
+        touchEndX = e.changedTouches[0].screenX;
+        handleSwipe();
+    }, { passive: true });
+
+    function handleSwipe() {
+        const threshold = 60; // Minimum distance to be considered a swipe
+        const isSwipeRight = touchEndX > touchStartX + threshold;
+        const isSwipeLeft = touchEndX < touchStartX - threshold;
+
+        // Sidebar uses right: -350px, meaning it reveals by sliding left, and hides by sliding right
+        if (sidebar.classList.contains('open')) {
+            if (isSwipeRight) {
+                // Dragging sidebar back to the right -> closes it
+                closeSidebar();
+            }
+        }
+    }
 
     // ── Auth Simulation ─────────────────────────────────────────────────────────
     const currentRole = localStorage.getItem('role') || 'guest';

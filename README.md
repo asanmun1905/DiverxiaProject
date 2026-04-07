@@ -37,6 +37,7 @@ DiverxiaProject/
 |---|---|---|
 | Inicio / Login | `index.html` | Público |
 | Selección de Rol | `roles.html` | Público |
+| **Listado de Eventos** | **`eventos.html`** | Jueces e Invitados |
 | Panel Administrador | `admin.html` | Solo administradores |
 | Panel Jueces | `jueces.html` | Solo jueces |
 | Área Invitados | `invitados.html` | Invitados y administradores |
@@ -85,6 +86,20 @@ Presente en todas las páginas:
 ```
 © 2026 Diverxia Consulting
 ```
+
+---
+
+## 📱 Diseño y Funcionalidad Responsiva
+
+- **Desktop & Tablet:** Visualizaciones multi-columna (ej. cuadrícula de roles), márgenes amplios y navegación lateral cómoda.
+- **Mobile (< 640px):**
+  - Textos, botones y espaciados optimizados.
+  - Las tarjetas (roles y eventos) se apilan verticalmente.
+  - La barra superior de filtros de eventos se acomoda de forma flexible.
+  - El fondo `bg-geometry` reduce el tamaño de sus figuras por defecto para rendir mejor y no abrumar la pantalla.
+  - Sidebar cubre el `100vw`.
+  - **Soporte táctil (Gestos):** La barra lateral principal se puede cerrar deslizando el dedo hacia la derecha.
+  - **Scroll nativo:** La lista de eventos utiliza `-webkit-overflow-scrolling: touch` para un deslizamiento nativo inercial en pantallas de iOS/Móvil.
 
 ---
 
