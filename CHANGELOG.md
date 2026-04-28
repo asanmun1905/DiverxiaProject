@@ -2,8 +2,8 @@
 
 ## Project Overview
 - **Name:** Diverxia Event Manager (Frontend Mockup)
-- **Tech Stack:** Vanilla HTML5, CSS3 (No preprocessors), Vanilla JS (ES6). No backend or DB.
-- **Goal:** Static presentation of an event management interface allowing dummy navigation, visual checks, and responsive layouts.
+- **Tech Stack:** Vanilla HTML5, CSS3, Vanilla JS (ES6), Supabase (PostgreSQL).
+- **Goal:** Event management interface with real-time data persistence and administrative tools.
 - **Theme:** Diverxia Consulting brand. Primary (`#31b7db`), Dark (`#252930`), Light (`#ebebeb`).
 
 ## Current Architecture & State
@@ -68,7 +68,6 @@
 - **Architectural Shift:** Moved from vanilla `file://` static loading to a Node.js web server.
 - **Dependencies:** Initialized `package.json` with `express` package.
 - **Re-structuring:** Shifted all HTML, CSS, JS, and `img/` media into a `public/` directory separating backend configuration from frontend logic.
-- **Backend:** Created `server.js` listening on `PORT 3000` executing `express.static()` to natively decouple static consumption routing.
 
 ### Update 006 - Advanced Admin Dashboard
 - **Data Persistence:** Re-architected Event Controller logic separating local hardcoded arrays into cached arrays stored inside `localStorage` mimicking a pseudo-backend DB for events CRUD operations.
@@ -80,3 +79,14 @@
   - Built bulk deletion actions grouping `checked` attributes to unveil a dynamic `.btn-danger` bulk manager.
   - Interactive Modal element (`<dialog id="confirm-modal">`) rendering visual Glassmorphism validations preventing un-warranted delete actions.
   - Activated HTML5 native global `draggable` logic with `dragstart` / `drop` logic enabling persistent user reordering array swaps. Visual rotation matrix triggers `3deg` mapping to give realistic physics to card pickups via CSS.
+
+### Update 007 - Supabase Migration
+- **Architectural Shift:** Migrated from `localStorage` and local Express/SQLite to a fully cloud-based architecture using Supabase.
+- **Data Persistence:** Integrated `supabase-js` SDK to handle event fetching, creation, deletion, and reordering.
+- **Configuration:** Added `supabase-config.js` for centralized client initialization.
+- **Frontend Updates:** Updated `eventos.html` and `admin.html` to fetch and manipulate data directly from the Supabase `eventos` table.
+
+### Update 008 - Project Cleanup & Optimization
+- **Backend Removal:** Deleted legacy `server.js`, `diverxia.db`, `package.json`, and `node_modules` as the project is now a static site hosted on Netlify.
+- **Code Refinement:** Cleaned up `script.js` by removing deprecated comments and legacy server-side logic.
+- **Documentation:** Updated `README.md` and `CHANGELOG.md` to reflect the current cloud-native architecture.

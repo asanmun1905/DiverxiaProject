@@ -1,6 +1,6 @@
 # Diverxia Evento — Aplicación Web Estática
 
-Aplicación web estática para la gestión visual de un evento con pruebas, participantes, jueces e invitados. Desarrollada con **HTML, CSS y JavaScript** puro, sin base de datos ni backend.
+Aplicación web estática para la gestión visual de un evento con pruebas, participantes, jueces e invitados. Desarrollada con **HTML, CSS y JavaScript** puro, integrada con **Supabase** para la persistencia de datos.
 
 ---
 
@@ -116,8 +116,8 @@ Presente en todas las páginas:
 ## ⚙️ Tecnologías Utilizadas
 
 - **Frontend:** HTML5, CSS3, JavaScript (ES6+), Google Fonts
-- **Backend:** Node.js, Express (Sirve el directorio estático `public/`)
-- **Almacenamiento (Prototipo):** `localStorage` (sin base de datos)
+- **Base de Datos:** [Supabase](https://supabase.com/) (PostgreSQL + API REST/Realtime)
+- **Hosting:** [Netlify](https://www.netlify.com/) (Despliegue continuo y hosting estático)
 
 ---
 
