@@ -1061,3 +1061,257 @@ dialog::backdrop {
         font-size: 1.2rem;
     }
 }
+
+/* ── EVENT DETAIL SCREEN STYLES ── */
+
+.detail-container {
+    width: 100%;
+    max-width: 1100px;
+    padding: 20px;
+    animation: fadeIn 0.8s cubic-bezier(0.2, 0.8, 0.2, 1) forwards;
+}
+
+.detail-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 30px;
+    flex-wrap: wrap;
+    gap: 20px;
+    border-bottom: 1px solid rgba(255, 255, 255, 0.1);
+    padding-bottom: 20px;
+}
+
+.detail-title-area h1 {
+    margin-bottom: 5px;
+    font-size: 2.2rem;
+}
+
+.detail-title-area .status-badge {
+    display: inline-block;
+    padding: 4px 10px;
+    border-radius: 20px;
+    font-size: 0.8rem;
+    font-weight: 600;
+    margin-top: 5px;
+}
+
+/* Tabs */
+.tabs-navigation {
+    display: flex;
+    gap: 15px;
+    margin-bottom: 25px;
+    border-bottom: 1px solid rgba(255, 255, 255, 0.05);
+    padding-bottom: 10px;
+}
+
+.tab-btn {
+    background: transparent;
+    border: none;
+    color: rgba(235, 235, 235, 0.6);
+    font-size: 1.1rem;
+    font-weight: 600;
+    padding: 10px 20px;
+    cursor: pointer;
+    transition: all 0.3s ease;
+    border-bottom: 3px solid transparent;
+    font-family: 'Outfit', sans-serif;
+}
+
+.tab-btn:hover {
+    color: var(--light);
+}
+
+.tab-btn.active {
+    color: var(--primary);
+    border-bottom-color: var(--primary);
+}
+
+.tab-content {
+    display: none;
+    animation: fadeIn 0.4s ease forwards;
+}
+
+.tab-content.active {
+    display: block;
+}
+
+/* Styled Table */
+.table-responsive {
+    width: 100%;
+    overflow-x: auto;
+    border-radius: 16px;
+    border: 1px solid rgba(255, 255, 255, 0.08);
+    background: rgba(255, 255, 255, 0.01);
+    backdrop-filter: blur(15px);
+    -webkit-backdrop-filter: blur(15px);
+    box-shadow: 0 10px 30px rgba(0,0,0,0.3);
+}
+
+.custom-table {
+    width: 100%;
+    border-collapse: collapse;
+    text-align: left;
+    font-size: 1rem;
+}
+
+.custom-table th, .custom-table td {
+    padding: 16px 20px;
+    border-bottom: 1px solid rgba(255, 255, 255, 0.06);
+}
+
+.custom-table th {
+    background: rgba(255, 255, 255, 0.03);
+    color: var(--primary);
+    font-weight: 700;
+    text-transform: uppercase;
+    font-size: 0.85rem;
+    letter-spacing: 0.05em;
+}
+
+.custom-table tr:last-child td {
+    border-bottom: none;
+}
+
+.custom-table tr:hover td {
+    background: rgba(49, 183, 219, 0.03);
+}
+
+/* Score Input Field */
+.table-score-input {
+    width: 70px;
+    background: rgba(255, 255, 255, 0.05);
+    border: 1px solid rgba(255, 255, 255, 0.15);
+    color: var(--light);
+    border-radius: 8px;
+    padding: 6px 10px;
+    text-align: center;
+    font-family: inherit;
+    font-weight: 600;
+    outline: none;
+    transition: all 0.3s;
+}
+
+.table-score-input:focus {
+    border-color: var(--primary);
+    box-shadow: 0 0 10px rgba(49, 183, 219, 0.3);
+    background: rgba(255, 255, 255, 0.1);
+}
+
+.table-score-input:disabled {
+    opacity: 0.7;
+    background: transparent;
+    border-color: transparent;
+    cursor: not-allowed;
+}
+
+/* Ranking Podium Styling */
+.ranking-row {
+    transition: all 0.3s ease;
+}
+
+.ranking-row.gold-rank {
+    background: linear-gradient(90deg, rgba(255, 215, 0, 0.18), rgba(255, 215, 0, 0.03));
+}
+.ranking-row.gold-rank td {
+    color: #ffe875;
+    font-weight: 700;
+}
+
+.ranking-row.silver-rank {
+    background: linear-gradient(90deg, rgba(192, 192, 192, 0.18), rgba(192, 192, 192, 0.03));
+}
+.ranking-row.silver-rank td {
+    color: #e0e0e0;
+    font-weight: 700;
+}
+
+.ranking-row.bronze-rank {
+    background: linear-gradient(90deg, rgba(205, 127, 50, 0.18), rgba(205, 127, 50, 0.03));
+}
+.ranking-row.bronze-rank td {
+    color: #f5b075;
+    font-weight: 700;
+}
+
+.rank-badge {
+    display: inline-flex;
+    justify-content: center;
+    align-items: center;
+    width: 28px;
+    height: 28px;
+    border-radius: 50%;
+    font-weight: bold;
+    font-size: 0.9rem;
+}
+
+.gold-rank .rank-badge { background: #ffd700; color: #252930; }
+.silver-rank .rank-badge { background: #c0c0c0; color: #252930; }
+.bronze-rank .rank-badge { background: #cd7f32; color: #252930; }
+.normal-rank .rank-badge { background: rgba(255, 255, 255, 0.1); color: var(--light); }
+
+/* Back Button */
+.btn-back {
+    display: inline-flex;
+    align-items: center;
+    gap: 8px;
+    color: var(--light);
+    text-decoration: none;
+    font-weight: 600;
+    transition: all 0.3s;
+    background: rgba(255, 255, 255, 0.05);
+    border: 1px solid rgba(255, 255, 255, 0.1);
+    padding: 10px 20px;
+    border-radius: 30px;
+}
+
+.btn-back:hover {
+    background: rgba(49, 183, 219, 0.1);
+    border-color: var(--primary);
+    color: var(--primary);
+    transform: translateX(-3px);
+}
+
+/* Highlight for Guest's own team row */
+.my-team-row {
+    background: rgba(255, 255, 255, 0.15) !important;
+    box-shadow: 0 0 20px rgba(255, 255, 255, 0.25) !important;
+}
+
+.my-team-row td {
+    color: #ffffff !important;
+    text-shadow: 0 0 10px rgba(255, 255, 255, 0.6) !important;
+    font-weight: 800 !important;
+    border-top: 2px solid rgba(255, 255, 255, 0.9) !important;
+    border-bottom: 2px solid rgba(255, 255, 255, 0.9) !important;
+}
+
+.my-team-row td:first-child {
+    border-left: 2px solid rgba(255, 255, 255, 0.9) !important;
+    border-top-left-radius: 8px;
+    border-bottom-left-radius: 8px;
+}
+
+.my-team-row td:last-child {
+    border-right: 2px solid rgba(255, 255, 255, 0.9) !important;
+    border-top-right-radius: 8px;
+    border-bottom-right-radius: 8px;
+}
+
+/* Modal and layout adjustments for team lists inside detail-evento */
+#guest-teams-container::-webkit-scrollbar {
+    width: 6px;
+}
+#guest-teams-container::-webkit-scrollbar-track {
+    background: rgba(255, 255, 255, 0.02);
+    border-radius: 3px;
+}
+#guest-teams-container::-webkit-scrollbar-thumb {
+    background: rgba(255, 255, 255, 0.1);
+    border-radius: 3px;
+}
+#guest-teams-container::-webkit-scrollbar-thumb:hover {
+    background: rgba(255, 255, 255, 0.2);
+}
+
+

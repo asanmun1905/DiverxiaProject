@@ -125,6 +125,19 @@
                     <option value="finalizado">Finalizado</option>
                 </select>
             </div>
+
+            <!-- Inicialización de pruebas y equipos (solo para nuevos eventos) -->
+            <div id="event-modal-init-fields" style="display: grid; grid-template-columns: 1fr 1fr; gap: 15px;">
+                <div class="form-group">
+                    <label class="form-label" for="event-modal-pruebas">Nº Pruebas (max 10)</label>
+                    <input type="number" id="event-modal-pruebas" class="form-input" min="1" max="10" value="5">
+                </div>
+
+                <div class="form-group">
+                    <label class="form-label" for="event-modal-equipos">Nº Equipos (max 16)</label>
+                    <input type="number" id="event-modal-equipos" class="form-input" min="1" max="16" value="8">
+                </div>
+            </div>
         </div>
         <div class="modal-actions">
             <button id="event-modal-cancel" class="filter-btn">Cancelar</button>
@@ -167,6 +180,7 @@
         }
 
         // ── Event Modal ───────────────────────────────────────────────────────
+        // ── Event Modal ───────────────────────────────────────────────────────
         document.getElementById('btn-nuevo-evento').addEventListener('click', () => {
             document.getElementById('event-modal-title').textContent = 'Nuevo Evento';
             document.getElementById('event-modal-id').value = '';
@@ -175,6 +189,9 @@
             document.getElementById('event-modal-fecha').value = '';
             document.getElementById('event-modal-fecha-fin').value = '';
             document.getElementById('event-modal-estado').value = 'abierto';
+            document.getElementById('event-modal-pruebas').value = '5';
+            document.getElementById('event-modal-equipos').value = '8';
+            document.getElementById('event-modal-init-fields').style.display = 'grid';
             eventModal.showModal();
         });
 
@@ -207,10 +224,33 @@
             } else {
                 // Crear
                 const newOrder = events.length;
-                const { error } = await supabase
+                const { data, error } = await supabase
                     .from('eventos')
-                    .insert({ ...payload, display_order: newOrder });
+                    .insert({ ...payload, display_order: newOrder })
+                    .select();
                 if (error) { console.error(error); return; }
+
+                if (data && data.length > 0) {
+                    const newEvent = data[0];
+                    
+                    // Insertar Pruebas
+                    const numPruebas = Math.min(10, Math.max(1, parseInt(document.getElementById('event-modal-pruebas').value) || 5));
+                    const trialsToInsert = [];
+                    for (let i = 1; i <= numPruebas; i++) {
+                        trialsToInsert.push({ evento_id: newEvent.id, nombre: `Prueba ${i}` });
+                    }
+                    const { error: errPruebas } = await supabase.from('pruebas').insert(trialsToInsert);
+                    if (errPruebas) console.error('Error al insertar pruebas:', errPruebas);
+
+                    // Insertar Equipos
+                    const numEquipos = Math.min(16, Math.max(1, parseInt(document.getElementById('event-modal-equipos').value) || 8));
+                    const teamsToInsert = [];
+                    for (let i = 1; i <= numEquipos; i++) {
+                        teamsToInsert.push({ evento_id: newEvent.id, nombre: `Equipo ${i}` });
+                    }
+                    const { error: errEquipos } = await supabase.from('equipos').insert(teamsToInsert);
+                    if (errEquipos) console.error('Error al insertar equipos:', errEquipos);
+                }
             }
 
             eventModal.close();
@@ -225,6 +265,7 @@
             document.getElementById('event-modal-fecha').value = ev.fecha;
             document.getElementById('event-modal-fecha-fin').value = ev.fecha_fin || '';
             document.getElementById('event-modal-estado').value = ev.estado || 'abierto';
+            document.getElementById('event-modal-init-fields').style.display = 'none';
             eventModal.showModal();
         }
 
@@ -365,7 +406,28 @@
                     </div>
                 `;
 
-                card.querySelector('.btn-edit-icon').addEventListener('click', () => openEditModal(sorted[idx]));
+                // Configurar cursor pointer si el evento está activo
+                const isEventActive = ev.estado === 'abierto' || status === 'active';
+                if (isEventActive) {
+                    card.style.cursor = 'pointer';
+                }
+
+                card.addEventListener('click', (e) => {
+                    // Evitar la navegación si se hace click en controles
+                    if (e.target.closest('.card-checkbox') || e.target.closest('button') || e.target.closest('.drag-handle')) {
+                        return;
+                    }
+                    if (isEventActive) {
+                        window.location.href = `detalle-evento.html?id=${ev.id}`;
+                    } else {
+                        alert('Este evento no está activo. Solo puedes entrar en eventos activos.');
+                    }
+                });
+
+                card.querySelector('.btn-edit-icon').addEventListener('click', (e) => {
+                    e.stopPropagation();
+                    openEditModal(sorted[idx]);
+                });
                 listEl.appendChild(card);
             });
 

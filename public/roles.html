@@ -44,11 +44,27 @@
             <p class="subtitle">Elige como quieres participar en el evento.</p>
             
             <div class="roles-grid">
-                <a href="eventos.html" class="role-card" id="btn-jueces-login">Jueces</a>
+                <a href="#" class="role-card" id="btn-jueces-login">Jueces</a>
                 <a href="eventos.html" class="role-card" id="btn-invitados-login">Invitados</a>
             </div>
         </div>
     </main>
+
+    <!-- Modal para código de juez -->
+    <dialog id="judge-code-modal">
+        <h2>Acceso Jueces</h2>
+        <div style="margin-top: 10px;">
+            <div class="form-group" style="text-align: left;">
+                <label class="form-label" for="judge-code-input">Código de Juez</label>
+                <input type="text" id="judge-code-input" class="form-input" style="text-transform: uppercase;">
+                <p id="judge-code-error" style="color: #ff5555; font-size: 0.85rem; margin-top: 5px; display: none;">Código de juez incorrecto. Introduce un código válido.</p>
+            </div>
+        </div>
+        <div class="modal-actions">
+            <button id="judge-code-cancel" class="filter-btn">Cancelar</button>
+            <button id="judge-code-submit" class="btn-primary" style="padding: 10px 20px;">Entrar</button>
+        </div>
+    </dialog>
 
     <footer>
         © 2026 Diverxia Consulting

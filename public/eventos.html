@@ -67,13 +67,28 @@
         </div>
     </main>
 
+    <!-- Modal para selección de equipo por Invitados -->
+    <dialog id="guest-team-modal">
+        <h2 id="guest-team-modal-title">Selecciona tu Equipo</h2>
+        <p class="subtitle" style="margin-top: 5px; margin-bottom: 20px; font-size: 0.9rem; text-align: left;">Elige el equipo al que perteneces para unirte al evento.</p>
+        
+        <div id="guest-teams-container" style="max-height: 350px; overflow-y: auto; margin-bottom: 20px; padding-right: 5px; display: flex; flex-direction: column; gap: 10px;">
+            <!-- Rendered dynamically by JS -->
+            <div style="text-align: center; color: var(--primary); padding: 20px;">Cargando equipos...</div>
+        </div>
+        
+        <div class="modal-actions" style="justify-content: flex-end; margin-top: 20px;">
+            <button id="guest-team-cancel" class="filter-btn">Cancelar</button>
+        </div>
+    </dialog>
+
     <footer>
         © 2026 Diverxia Consulting
     </footer>
 
     <script src="script.js"></script>
     <script type="module">
-        import { supabase } from './supabase.js';
+        import { supabase } from './supabase-config.js';
 
         let events = [];
 
@@ -87,7 +102,13 @@
                 console.error('Error cargando eventos:', error.message);
                 return;
             }
-            events = data;
+            
+            const userRole = localStorage.getItem('role');
+            if (userRole === 'invitado') {
+                events = data.filter(ev => ev.estado === 'abierto');
+            } else {
+                events = data;
+            }
             renderEvents();
         }
 
@@ -154,7 +175,114 @@
                         <div class="event-status ${sl.cls}">${sl.label}</div>
                     </div>
                 `;
+
+                // Configurar click
+                const userRole = localStorage.getItem('role');
+                const isEventActive = ev.estado === 'abierto' || status === 'active';
+
+                if (userRole === 'admin' || userRole === 'juez') {
+                    if (isEventActive) {
+                        card.style.cursor = 'pointer';
+                        card.addEventListener('click', () => {
+                            window.location.href = `detalle-evento.html?id=${ev.id}`;
+                        });
+                    } else {
+                        card.addEventListener('click', () => {
+                            alert('Este evento no está activo. Solo se puede entrar en eventos activos.');
+                        });
+                    }
+                } else if (userRole === 'invitado') {
+                    card.style.cursor = 'pointer';
+                    card.addEventListener('click', () => {
+                        const joinedTeam = localStorage.getItem(`joined_team_${ev.id}`);
+                        if (joinedTeam) {
+                            window.location.href = `detalle-evento.html?id=${ev.id}`;
+                        } else {
+                            openGuestTeamModal(ev);
+                        }
+                    });
+                }
                 list.appendChild(card);
+            });
+        }
+
+        // ── Modal Selección de Equipos (Invitados) ───────────────────────────
+        const guestTeamModal = document.getElementById('guest-team-modal');
+        const guestTeamsContainer = document.getElementById('guest-teams-container');
+        const guestTeamCancel = document.getElementById('guest-team-cancel');
+
+        if (guestTeamCancel && guestTeamModal) {
+            guestTeamCancel.addEventListener('click', () => {
+                guestTeamModal.close();
+            });
+        }
+
+        async function openGuestTeamModal(ev) {
+            document.getElementById('guest-team-modal-title').innerHTML = `Unirse a <span>${ev.nombre}</span>`;
+            guestTeamsContainer.innerHTML = '<div style="text-align: center; color: var(--primary); padding: 20px;">Cargando equipos...</div>';
+            guestTeamModal.showModal();
+
+            const { data: teams, error } = await supabase
+                .from('equipos')
+                .select('*')
+                .eq('evento_id', ev.id)
+                .order('nombre', { ascending: true });
+
+            if (error) {
+                console.error('Error cargando equipos:', error);
+                guestTeamsContainer.innerHTML = '<div style="text-align: center; color: #ff5555; padding: 20px;">Error al cargar equipos.</div>';
+                return;
+            }
+
+            guestTeamsContainer.innerHTML = '';
+            if (teams.length === 0) {
+                guestTeamsContainer.innerHTML = '<div style="text-align: center; color: var(--primary); padding: 20px;">No hay equipos en este evento.</div>';
+                return;
+            }
+
+            teams.forEach(team => {
+                // Generar conteo estable e interactivo de participantes basado en hash del id
+                const hashInput = team.id.replace(/-/g, '').substring(0, 4);
+                const baseCount = (parseInt(hashInput, 16) % 5) + 3;
+
+                const item = document.createElement('div');
+                item.style.display = 'flex';
+                item.style.justifyContent = 'space-between';
+                item.style.alignItems = 'center';
+                item.style.background = 'rgba(255, 255, 255, 0.03)';
+                item.style.border = '1px solid rgba(255, 255, 255, 0.08)';
+                item.style.borderRadius = '10px';
+                item.style.padding = '12px 20px';
+                item.style.transition = 'all 0.3s ease';
+
+                item.innerHTML = `
+                    <div style="display: flex; flex-direction: column;">
+                        <span style="font-weight: 600; font-size: 1.05rem; color: #ffffff;">${team.nombre}</span>
+                        <span style="font-size: 0.85rem; color: rgba(255, 255, 255, 0.5);">Participantes: ${baseCount}</span>
+                    </div>
+                    <button class="btn-primary join-team-btn" style="padding: 6px 15px; font-size: 0.9rem; width: auto; margin: 0; border-radius: 6px; cursor: pointer;">Unirse</button>
+                `;
+
+                // Hover animado
+                item.addEventListener('mouseenter', () => {
+                    item.style.background = 'rgba(255, 255, 255, 0.08)';
+                    item.style.borderColor = 'rgba(49, 183, 219, 0.4)';
+                    item.style.boxShadow = '0 0 10px rgba(49, 183, 219, 0.15)';
+                });
+                item.addEventListener('mouseleave', () => {
+                    item.style.background = 'rgba(255, 255, 255, 0.03)';
+                    item.style.borderColor = 'rgba(255, 255, 255, 0.08)';
+                    item.style.boxShadow = 'none';
+                });
+
+                // Unirse
+                item.querySelector('.join-team-btn').addEventListener('click', () => {
+                    localStorage.setItem(`joined_team_${ev.id}`, team.id);
+                    guestTeamModal.close();
+                    window.location.href = `detalle-evento.html?id=${ev.id}`;
+                });
+
+                guestTeamsContainer.appendChild(item);
             });
         }
 

@@ -113,9 +113,43 @@ document.addEventListener('DOMContentLoaded', () => {
     }
 
     const juecesLoginBtn = document.getElementById('btn-jueces-login');
-    if (juecesLoginBtn) {
-        juecesLoginBtn.addEventListener('click', () => {
-            localStorage.setItem('role', 'juez');
+    const judgeModal = document.getElementById('judge-code-modal');
+    const judgeInput = document.getElementById('judge-code-input');
+    const judgeError = document.getElementById('judge-code-error');
+    const judgeCancel = document.getElementById('judge-code-cancel');
+    const judgeSubmit = document.getElementById('judge-code-submit');
+
+    if (juecesLoginBtn && judgeModal) {
+        juecesLoginBtn.addEventListener('click', (e) => {
+            e.preventDefault();
+            judgeInput.value = '';
+            judgeError.style.display = 'none';
+            judgeModal.showModal();
+        });
+
+        judgeCancel.addEventListener('click', () => {
+            judgeModal.close();
+        });
+
+        const validateAndSubmit = () => {
+            const code = judgeInput.value.trim().toUpperCase();
+            const validCodes = ['DIVERXIAJUEZ01', 'DIVERXIAJUEZ02', 'DIVERXIAJUEZ03', 'DIVERXIAJUEZ04', 'DIVERXIAJUEZ05'];
+            
+            if (validCodes.includes(code)) {
+                localStorage.setItem('role', 'juez');
+                localStorage.setItem('judge_code', code);
+                judgeModal.close();
+                window.location.href = 'eventos.html';
+            } else {
+                judgeError.style.display = 'block';
+            }
+        };
+
+        judgeSubmit.addEventListener('click', validateAndSubmit);
+        judgeInput.addEventListener('keypress', (e) => {
+            if (e.key === 'Enter') {
+                validateAndSubmit();
+            }
         });
     }
 
@@ -123,6 +157,7 @@ document.addEventListener('DOMContentLoaded', () => {
     if (invitadosLoginBtn) {
         invitadosLoginBtn.addEventListener('click', () => {
             localStorage.setItem('role', 'invitado');
+            localStorage.removeItem('judge_code');
         });
     }
 
