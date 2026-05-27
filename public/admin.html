@@ -105,7 +105,7 @@
                 <textarea id="event-modal-descripcion" class="form-input" placeholder="Descripción (opcional)" rows="3" style="min-height: 80px; resize: vertical;"></textarea>
             </div>
 
-            <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 15px;">
+            <div class="form-row">
                 <div class="form-group">
                     <label class="form-label" for="event-modal-fecha">Inicio</label>
                     <input type="date" id="event-modal-fecha" class="form-input">
@@ -127,7 +127,7 @@
             </div>
 
             <!-- Inicialización de pruebas y equipos (solo para nuevos eventos) -->
-            <div id="event-modal-init-fields" style="display: grid; grid-template-columns: 1fr 1fr; gap: 15px;">
+            <div id="event-modal-init-fields" class="form-row">
                 <div class="form-group">
                     <label class="form-label" for="event-modal-pruebas">Nº Pruebas (max 10)</label>
                     <input type="number" id="event-modal-pruebas" class="form-input" min="1" max="10" value="5">
@@ -391,12 +391,14 @@
                         <div class="event-date-range">${formatDate(ev.fecha, ev.fecha_fin)}</div>
                         <div class="event-status ${sl.cls}">${sl.label}</div>
                     </div>
-                    <button class="btn-edit-icon" aria-label="Editar Evento" data-idx="${idx}">
-                        <img src="img/wmremove-transformed-removebg-preview.png" alt="Editar">
-                    </button>
-                    <button class="btn-delete-icon" onclick="window._deleteEvento('${ev.id}')" aria-label="Borrar Evento">
-                        <img src="img/botonborrar.png" alt="Borrar">
-                    </button>
+                    <div class="event-actions">
+                        <button class="btn-edit-icon" aria-label="Editar Evento" data-idx="${idx}">
+                            <img src="img/wmremove-transformed-removebg-preview.png" alt="Editar">
+                        </button>
+                        <button class="btn-delete-icon" onclick="window._deleteEvento('${ev.id}')" aria-label="Borrar Evento">
+                            <img src="img/botonborrar.png" alt="Borrar">
+                        </button>
+                    </div>
                     <div class="drag-handle" style="cursor: grab;">
                         <svg width="18" height="24" viewBox="0 0 24 24" fill="currentColor" opacity="0.6" style="pointer-events: none;">
                             <circle cx="9" cy="5" r="2"/><circle cx="15" cy="5" r="2"/>

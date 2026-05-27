@@ -177,6 +177,7 @@
         let scores = [];
         let userMap = {};
         let userUuid = '';
+        let isSubscribed = false;
 
         // Inicializar Pestañas
         document.querySelectorAll('.tab-btn').forEach(btn => {
@@ -194,11 +195,54 @@
             });
         });
 
+        async function getOrCreateGuestUser() {
+            let guestUuid = localStorage.getItem('guest_user_uuid');
+            if (guestUuid) return guestUuid;
+
+            const randomStr = Math.random().toString(36).substring(2, 10);
+            const email = `guest_${randomStr}@diverxia.com`;
+            const password = 'password123';
+
+            const { data, error } = await supabase.auth.signUp({
+                email,
+                password
+            });
+
+            if (error) {
+                console.error('Error signing up guest:', error);
+                return null;
+            }
+
+            const userId = data.user.id;
+
+            const { error: dbError } = await supabase
+                .from('usuarios')
+                .insert({
+                    id: userId,
+                    nombre: `Invitado ${randomStr}`,
+                    rol: 'juez' // Utilizar 'juez' para pasar check constraints de rol
+                });
+
+            if (dbError) {
+                console.error('Error inserting guest in DB:', dbError);
+                return null;
+            }
+
+            localStorage.setItem('guest_user_uuid', userId);
+            return userId;
+        }
+
         // Cargar todos los datos del evento
         async function loadEventData() {
             // Cargar mapa de usuarios de Supabase
             userMap = await fetchUserMap();
-            userUuid = userMap[judgeCode] || judgeCode;
+            
+            if (userRole === 'invitado') {
+                const guestUuid = await getOrCreateGuestUser();
+                userUuid = guestUuid || userMap[judgeCode] || judgeCode;
+            } else {
+                userUuid = userMap[judgeCode] || judgeCode;
+            }
 
             // 1. Obtener detalles del evento
             const { data: evData, error: evError } = await supabase
@@ -264,7 +308,7 @@
                 const joinedTeamId = localStorage.getItem(`joined_team_${eventId}`);
                 const joinedTeam = teams.find(t => t.id === joinedTeamId);
                 identityBadge.textContent = `Equipo: ${joinedTeam ? joinedTeam.nombre : 'Ninguno'}`;
-                document.getElementById('table-subtitle').textContent = 'Puntuaciones de cada prueba evaluadas por los jueces.';
+                document.getElementById('table-subtitle').textContent = 'Rellena las puntuaciones de cada prueba (1 a 5 puntos).';
             }
 
             // 4. Obtener todas las puntuaciones de este evento (de todas las pruebas de este evento)
@@ -281,12 +325,132 @@
                 scores = [];
             }
 
+            if (!isSubscribed && trials.length > 0) {
+                setupRealtimeSubscription();
+                isSubscribed = true;
+            }
+
             renderScoresTable();
+        }
+
+        function isTrialBlocked(trialId) {
+            return scores.some(s => s.prueba_id === trialId && (s.equipo_id === null || s.equipo_id === undefined));
+        }
+
+        async function toggleTrialVoting(trialId, enable) {
+            if (enable) {
+                // Desbloquear: Eliminar cualquier registro con equipo_id nulo para esta prueba
+                const { error } = await supabase
+                    .from('puntuaciones')
+                    .delete()
+                    .eq('prueba_id', trialId)
+                    .is('equipo_id', null);
+                
+                if (error) {
+                    console.error('Error al desbloquear prueba:', error);
+                } else {
+                    scores = scores.filter(s => !(s.prueba_id === trialId && s.equipo_id === null));
+                }
+            } else {
+                // Bloquear: Insertar un registro con equipo_id nulo
+                const adminUuid = userMap['admin'] || userUuid;
+                const { data, error } = await supabase
+                    .from('puntuaciones')
+                    .insert({
+                        equipo_id: null,
+                        prueba_id: trialId,
+                        de_usuario: adminUuid,
+                        tipo: 'juez',
+                        valor: 5 // Para pasar check constraint
+                    })
+                    .select();
+                
+                if (error) {
+                    console.error('Error al bloquear prueba:', error);
+                } else if (data && data.length > 0) {
+                    scores.push(data[0]);
+                }
+            }
+            
+            renderScoresTable();
+        }
+
+        function setupRealtimeSubscription() {
+            supabase
+                .channel('db-changes')
+                .on('postgres_changes', { event: '*', schema: 'public', table: 'puntuaciones' }, async (payload) => {
+                    console.log('Cambio detectado en puntuaciones:', payload);
+                    await reloadScores();
+                })
+                .subscribe();
+
+            // Sondeo periódico cada 4 segundos como fallback
+            setInterval(async () => {
+                await reloadScores();
+            }, 4000);
+        }
+
+        async function reloadScores() {
+            const trialIds = trials.map(t => t.id);
+            if (trialIds.length > 0) {
+                const { data: scData, error: scError } = await supabase
+                    .from('puntuaciones')
+                    .select('*')
+                    .in('prueba_id', trialIds);
+                
+                if (!scError) {
+                    scores = scData || [];
+                    renderScoresTable();
+                    if (document.querySelector('.tab-btn[data-tab="tab-ranking"]').classList.contains('active')) {
+                        calculateAndRenderRanking();
+                    }
+                }
+            }
         }
 
         function parseDate(str) {
             const [y, m, d] = str.split('-').map(Number);
             return new Date(y, m - 1, d);
+        }
+
+        // Función para calcular la puntuación final de un equipo en una prueba usando la nueva fórmula
+        function calculateTeamTrialScore(teamId, trialId) {
+            // Obtener los UUIDs de los jueces
+            const judgeUuids = Object.keys(userMap)
+                .filter(code => code.startsWith('DIVERXIAJUEZ'))
+                .map(code => userMap[code]);
+
+            // 1. Obtener la media de los votos de los equipos (votos de invitados) en esta prueba
+            // Excluimos al propio equipo de la media (la media de los demás equipos, dividiendo entre uno menos)
+            const guestAverages = teams
+                .filter(t => t.id !== teamId)
+                .map(t => {
+                    const guestScores = scores.filter(s => s.equipo_id === t.id && s.prueba_id === trialId && !judgeUuids.includes(s.de_usuario));
+                    if (guestScores.length > 0) {
+                        return guestScores.reduce((sum, s) => sum + parseInt(s.valor || 0), 0) / guestScores.length;
+                    }
+                    return null;
+                }).filter(val => val !== null);
+
+            const overallGuestAvg = guestAverages.length > 0
+                ? guestAverages.reduce((sum, val) => sum + val, 0) / guestAverages.length
+                : 0;
+
+            // 2. Obtener la puntuación que han puesto los jueces a este equipo específico en esta prueba
+            const judgeScores = scores.filter(s => s.equipo_id === teamId && s.prueba_id === trialId && judgeUuids.includes(s.de_usuario));
+            const avgJudges = judgeScores.length > 0
+                ? judgeScores.reduce((sum, s) => sum + parseInt(s.valor || 0), 0) / judgeScores.length
+                : 0;
+
+            // 3. Hacer de nuevo una media entre la media de los equipos (invitados) y la nota de los jueces
+            if (overallGuestAvg > 0 && avgJudges > 0) {
+                return (overallGuestAvg + avgJudges) / 2;
+            } else if (avgJudges > 0) {
+                return avgJudges;
+            } else if (overallGuestAvg > 0) {
+                return overallGuestAvg;
+            }
+            return 0;
         }
 
         // Renderizar Tabla de Puntuaciones
@@ -302,7 +466,51 @@
             // 1. Añadir columnas de pruebas en la cabecera
             trials.forEach(trial => {
                 const th = document.createElement('th');
-                th.textContent = trial.nombre;
+                const isBlocked = isTrialBlocked(trial.id);
+                
+                const container = document.createElement('div');
+                container.className = 'trial-header-container';
+                
+                const spanName = document.createElement('span');
+                spanName.className = 'trial-name';
+                spanName.textContent = trial.nombre;
+                container.appendChild(spanName);
+
+                if (userRole === 'admin') {
+                    const labelSwitch = document.createElement('label');
+                    labelSwitch.className = 'trial-switch';
+                    labelSwitch.title = isBlocked ? 'Activar votación' : 'Desactivar votación';
+                    
+                    const input = document.createElement('input');
+                    input.type = 'checkbox';
+                    input.checked = !isBlocked;
+                    input.dataset.trialId = trial.id;
+                    
+                    const spanSlider = document.createElement('span');
+                    spanSlider.className = 'trial-slider';
+                    
+                    labelSwitch.appendChild(input);
+                    labelSwitch.appendChild(spanSlider);
+                    container.appendChild(labelSwitch);
+                    
+                    input.addEventListener('change', async () => {
+                        const shouldEnable = input.checked;
+                        await toggleTrialVoting(trial.id, shouldEnable);
+                    });
+                } else {
+                    if (isBlocked) {
+                        const badge = document.createElement('span');
+                        badge.className = 'trial-locked-badge';
+                        badge.innerHTML = `
+                            <svg viewBox="0 0 24 24" fill="currentColor">
+                                <path d="M18 8h-1V6c0-2.76-2.24-5-5-5S7 3.24 7 6v2H6c-1.1 0-2 .9-2 2v10c0 1.1.9 2 2 2h12c1.1 0 2-.9 2-2V10c0-1.1-.9-2-2-2zm-6 9c-1.1 0-2-.9-2-2s.9-2 2-2 2 .9 2 2-.9 2-2 2zm3.1-9H8.9V6c0-1.71 1.39-3.1 3.1-3.1 1.71 0 3.1 1.39 3.1 3.1v2z"/>
+                            </svg> Bloqueada
+                        `;
+                        container.appendChild(badge);
+                    }
+                }
+                
+                th.appendChild(container);
                 headerRow.appendChild(th);
             });
 
@@ -330,81 +538,67 @@
                 // Columnas de puntuaciones para cada prueba
                 trials.forEach(trial => {
                     const tdScore = document.createElement('td');
+                    const isBlocked = isTrialBlocked(trial.id);
                     
-                    if (userRole === 'invitado') {
-                        // Promedio de todos los jueces para invitados
-                        const trialScores = scores.filter(s => s.equipo_id === team.id && s.prueba_id === trial.id);
-                        let val = '-';
-                        if (trialScores.length > 0) {
-                            const sum = trialScores.reduce((acc, s) => acc + (parseInt(s.valor) || 0), 0);
-                            const avg = sum / trialScores.length;
-                            val = Number.isInteger(avg) ? avg.toString() : avg.toFixed(1);
+                    // Buscar la puntuación correspondiente de este usuario para este equipo y prueba
+                    const scoreObj = scores.find(s => s.equipo_id === team.id && s.prueba_id === trial.id && s.de_usuario === userUuid);
+                    const val = scoreObj ? scoreObj.valor : '';
+
+                    // Crear campo de entrada para la puntuación
+                    const input = document.createElement('input');
+                    input.type = 'number';
+                    input.min = '1';
+                    input.max = '5';
+                    input.step = '1';
+                    input.className = 'table-score-input';
+                    input.value = val;
+                    
+                    // Solo permitir edición si el evento está abierto, la prueba no está bloqueada y no es el propio equipo del invitado (un equipo no se puede votar a sí mismo)
+                    const isSelfVoting = (userRole === 'invitado' && team.id === joinedTeamId);
+                    if (eventDetail.estado !== 'abierto' || isBlocked || isSelfVoting) {
+                        input.disabled = true;
+                        if (isBlocked) {
+                            input.classList.add('locked-input');
+                            tdScore.classList.add('locked-cell');
+                            input.placeholder = '🔒';
+                        } else if (isSelfVoting) {
+                            input.classList.add('locked-input');
+                            tdScore.classList.add('locked-cell');
+                            input.placeholder = '🏠';
+                            input.title = 'No puedes votar a tu propio equipo';
                         }
-                        
-                        const span = document.createElement('span');
-                        span.textContent = val;
-                        span.style.fontWeight = '600';
-                        span.style.fontSize = '1.05rem';
-                        tdScore.appendChild(span);
-                    } else {
-                        // Buscar la puntuación correspondiente de este juez para este equipo y prueba
-                        const scoreObj = scores.find(s => s.equipo_id === team.id && s.prueba_id === trial.id && s.de_usuario === userUuid);
-                        const val = scoreObj ? scoreObj.valor : '';
-
-                        // Crear campo de entrada para la puntuación
-                        const input = document.createElement('input');
-                        input.type = 'number';
-                        input.min = '1';
-                        input.max = '5';
-                        input.step = '1';
-                        input.className = 'table-score-input';
-                        input.value = val;
-                        
-                        // Solo permitir edición si el evento está abierto
-                        if (eventDetail.estado !== 'abierto') {
-                            input.disabled = true;
-                        }
-
-                        // Evento al perder el foco para guardar
-                        input.addEventListener('change', async () => {
-                            let enteredVal = input.value.trim();
-                            if (enteredVal === '') {
-                                // Si se vacía, eliminar de la base de datos
-                                await deleteOrSaveScore(team.id, trial.id, null);
-                            } else {
-                                let numericVal = parseInt(enteredVal);
-                                if (isNaN(numericVal)) numericVal = 1;
-                                numericVal = Math.min(5, Math.max(1, numericVal));
-                                input.value = numericVal;
-                                await deleteOrSaveScore(team.id, trial.id, numericVal);
-                            }
-                            updateRowTotal(tr);
-                        });
-
-                        tdScore.appendChild(input);
                     }
+
+                    // Evento al perder el foco para guardar
+                    input.addEventListener('change', async () => {
+                        let enteredVal = input.value.trim();
+                        if (enteredVal === '') {
+                            await deleteOrSaveScore(team.id, trial.id, null);
+                        } else {
+                            let numericVal = parseInt(enteredVal);
+                            if (isNaN(numericVal)) numericVal = 1;
+                            numericVal = Math.min(5, Math.max(1, numericVal));
+                            input.value = numericVal;
+                            await deleteOrSaveScore(team.id, trial.id, numericVal);
+                        }
+                        updateRowTotal(tr);
+                    });
+
+                    tdScore.appendChild(input);
                     
                     tr.appendChild(tdScore);
                 });
 
-                // Calcular total para esta fila
+                // Calcular total oficial para esta fila usando la fórmula combinada
                 let totalScore = 0;
-                if (userRole === 'invitado') {
-                    const teamScoresList = scores.filter(s => s.equipo_id === team.id);
-                    totalScore = teamScoresList.reduce((sum, s) => sum + (parseInt(s.valor) || 0), 0);
-                } else {
-                    trials.forEach(trial => {
-                        const scoreObj = scores.find(s => s.equipo_id === team.id && s.prueba_id === trial.id && s.de_usuario === userUuid);
-                        if (scoreObj && scoreObj.valor) {
-                            totalScore += parseInt(scoreObj.valor) || 0;
-                        }
-                    });
-                }
+                trials.forEach(trial => {
+                    totalScore += calculateTeamTrialScore(team.id, trial.id);
+                });
 
                 // Columna total
                 const tdTotal = document.createElement('td');
                 tdTotal.className = 'row-total-score';
-                tdTotal.textContent = totalScore;
+                tdTotal.textContent = totalScore.toFixed(2);
                 tdTotal.style.fontWeight = 'bold';
                 tdTotal.style.color = (userRole === 'invitado' && team.id === joinedTeamId) ? '#ffffff' : 'var(--primary)';
                 tr.appendChild(tdTotal);
@@ -469,16 +663,14 @@
             }
         }
 
-        // Recalcular total de una fila en tiempo real
+        // Recalcular total oficial de una fila en tiempo real
         function updateRowTotal(tr) {
+            const teamId = tr.dataset.teamId;
             let total = 0;
-            tr.querySelectorAll('.table-score-input').forEach(input => {
-                const val = parseInt(input.value);
-                if (!isNaN(val)) {
-                    total += val;
-                }
+            trials.forEach(trial => {
+                total += calculateTeamTrialScore(teamId, trial.id);
             });
-            tr.querySelector('.row-total-score').textContent = total;
+            tr.querySelector('.row-total-score').textContent = total.toFixed(2);
         }
 
         // Calcular y Renderizar el Ranking (Pestaña 2)
@@ -487,10 +679,12 @@
             rankingBody.innerHTML = '';
             const joinedTeamId = localStorage.getItem(`joined_team_${eventId}`);
 
-            // Calcular puntuación total de cada equipo
+            // Calcular puntuación total de cada equipo usando la nueva fórmula
             const teamScores = teams.map(team => {
-                const teamScoresList = scores.filter(s => s.equipo_id === team.id);
-                const total = teamScoresList.reduce((sum, s) => sum + (parseInt(s.valor) || 0), 0);
+                let total = 0;
+                trials.forEach(trial => {
+                    total += calculateTeamTrialScore(team.id, trial.id);
+                });
                 return {
                     id: team.id,
                     nombre: team.nombre,
@@ -537,7 +731,7 @@
 
                 // Puntuación total
                 const tdScore = document.createElement('td');
-                tdScore.textContent = `${teamScore.total} pts`;
+                tdScore.textContent = `${teamScore.total.toFixed(2)} pts`;
                 tdScore.style.textAlign = 'right';
                 tdScore.style.fontWeight = 'bold';
                 tr.appendChild(tdScore);
