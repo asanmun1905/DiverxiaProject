@@ -6,6 +6,13 @@
     <title>Panel Juez - Diverxia</title>
     <link rel="icon" href="img/Favicon.png" type="image/png">
     <link rel="stylesheet" href="style.css">
+    <script>
+        const role = localStorage.getItem('role');
+        if (role !== 'juez' && role !== 'admin') {
+            alert('Acceso denegado. Debes ingresar como Juez.');
+            window.location.href = 'index.html';
+        }
+    </script>
 </head>
 <body>
     <div class="bg-geometry">
@@ -55,13 +62,5 @@
     </footer>
 
     <script src="script.js"></script>
-    <script>
-        // Proteger el acceso al panel de jueces
-        const role = localStorage.getItem('role');
-        if (role !== 'juez' && role !== 'admin') {
-            alert('Acceso denegado. Debes ingresar como Juez.');
-            window.location.href = 'index.html';
-        }
-    </script>
 </body>
 </html>

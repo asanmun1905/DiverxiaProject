@@ -22,8 +22,7 @@ export async function fetchUserMap() {
         }
     });
 
-    // Mapeo de respaldo para garantizar que ningún código de juez o administrador falle
-    // al guardar puntuaciones en la base de datos Supabase
+    // Mapeo de respaldo para evitar fallos si algún código no está registrado
     const validUuids = data.map(u => u.id);
     if (validUuids.length > 0) {
         const fallback1 = validUuids[0];

@@ -6,6 +6,20 @@
     <title>Detalle de Evento - Diverxia</title>
     <link rel="icon" href="img/Favicon.png" type="image/png">
     <link rel="stylesheet" href="style.css">
+    <script>
+        const role = localStorage.getItem('role');
+        if (!role) {
+            alert('Acceso denegado. Por favor, selecciona tu rol.');
+            window.location.href = 'index.html';
+        } else {
+            const urlParams = new URLSearchParams(window.location.search);
+            const eventId = urlParams.get('id');
+            if (!eventId) {
+                alert('ID de evento no válido');
+                window.location.href = 'index.html';
+            }
+        }
+    </script>
 </head>
 <body>
     <div class="bg-geometry">
@@ -139,21 +153,8 @@
     <script type="module">
         import { supabase, fetchUserMap } from './supabase-config.js';
 
-        // Proteger el acceso al detalle de eventos
-        const userRoleCheck = localStorage.getItem('role');
-        if (!userRoleCheck) {
-            alert('Acceso denegado. Por favor, selecciona tu rol.');
-            window.location.href = 'index.html';
-        }
-
-        // Obtener el ID del evento de los parámetros de la URL
         const urlParams = new URLSearchParams(window.location.search);
         const eventId = urlParams.get('id');
-
-        if (!eventId) {
-            alert('ID de evento no válido');
-            window.location.href = 'index.html';
-        }
 
         const userRole = localStorage.getItem('role');
         const judgeCode = localStorage.getItem('judge_code') || 'admin';
@@ -428,14 +429,11 @@
             return new Date(y, m - 1, d);
         }
 
-        // Función para calcular la puntuación final de un equipo en una prueba usando la nueva fórmula
         function calculateTeamTrialScore(teamId, trialId) {
-            // Obtener los UUIDs de los jueces (excluyendo admin si procede)
             const judgeUuids = Object.keys(userMap)
                 .filter(code => code.startsWith('DIVERXIAJUEZ'))
                 .map(code => userMap[code]);
 
-            // Calcular el número total de invitados en todos los equipos (basado en la simulación estable)
             let totalGuests = 0;
             teams.forEach(t => {
                 const hashInput = t.id.replace(/-/g, '').substring(0, 4);
@@ -447,7 +445,6 @@
             });
             totalGuests = Math.max(1, totalGuests);
 
-            // 1. Calcular puntuación de los invitados (X / totalGuests)
             const guestScores = scores.filter(s => 
                 s.equipo_id === teamId && 
                 s.prueba_id === trialId && 
@@ -455,12 +452,10 @@
                 s.de_usuario !== userMap['admin']
             );
             
-            // Los invitados que no han votado cuentan como 5 puntos (nota máxima)
             const missingGuestVotesCount = Math.max(0, totalGuests - guestScores.length);
             const X = guestScores.reduce((sum, s) => sum + parseInt(s.valor || 0), 0) + (missingGuestVotesCount * 5);
             const guestScorePart = X / totalGuests;
 
-            // 2. Calcular puntuación de los jueces (Y / expectedJudgesCount)
             const judgeScores = scores.filter(s => 
                 s.equipo_id === teamId && 
                 s.prueba_id === trialId && 
@@ -468,12 +463,10 @@
             );
             
             const expectedJudgesCount = Math.max(1, judgeUuids.length || 5);
-            // Los jueces que no han votado cuentan como 5 puntos (nota máxima)
             const missingJudgeVotesCount = Math.max(0, expectedJudgesCount - judgeScores.length);
             const Y_sum = judgeScores.reduce((sum, s) => sum + parseInt(s.valor || 0), 0) + (missingJudgeVotesCount * 5);
             const Y = Y_sum / expectedJudgesCount;
 
-            // 3. Aplicar la fórmula: (guestScorePart + Y) / 2
             return (guestScorePart + Y) / 2;
         }
 

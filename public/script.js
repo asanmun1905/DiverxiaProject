@@ -1,5 +1,4 @@
 document.addEventListener('DOMContentLoaded', () => {
-    // Limpiar sesión al entrar a la pantalla de login para evitar estados huérfanos
     if (window.location.pathname.includes('login.html')) {
         localStorage.removeItem('role');
         localStorage.removeItem('judge_code');
@@ -19,7 +18,6 @@ document.addEventListener('DOMContentLoaded', () => {
         hamburgerHeader.classList.remove('active');
     }
 
-    // Header hamburger → opens the sidebar
     if (hamburgerHeader) {
         hamburgerHeader.addEventListener('click', (e) => {
             e.stopPropagation();
@@ -31,7 +29,6 @@ document.addEventListener('DOMContentLoaded', () => {
         });
     }
 
-    // Sidebar X button → always closes the sidebar
     if (hamburgerSidebar) {
         hamburgerSidebar.addEventListener('click', (e) => {
             e.stopPropagation();
@@ -39,19 +36,17 @@ document.addEventListener('DOMContentLoaded', () => {
         });
     }
 
-    // Click outside the sidebar → close it
     document.addEventListener('click', (e) => {
         if (sidebar.classList.contains('open') && !sidebar.contains(e.target) && !hamburgerHeader.contains(e.target)) {
             closeSidebar();
         }
     });
 
-    // Prevent clicks inside sidebar from closing it via the outside-click listener
     sidebar.addEventListener('click', (e) => {
         e.stopPropagation();
     });
 
-    // ── Touch swipe support for the Sidebar ────────────────────────────────────
+    // Soporte táctil para barra lateral
     let touchStartX = 0;
     let touchEndX = 0;
 
@@ -61,32 +56,19 @@ document.addEventListener('DOMContentLoaded', () => {
 
     document.addEventListener('touchend', (e) => {
         touchEndX = e.changedTouches[0].screenX;
-        handleSwipe();
+        const threshold = 60;
+        if (sidebar.classList.contains('open') && touchEndX > touchStartX + threshold) {
+            closeSidebar();
+        }
     }, { passive: true });
 
-    function handleSwipe() {
-        const threshold = 60; // Minimum distance to be considered a swipe
-        const isSwipeRight = touchEndX > touchStartX + threshold;
-        const isSwipeLeft = touchEndX < touchStartX - threshold;
-
-        // Sidebar uses right: -350px, meaning it reveals by sliding left, and hides by sliding right
-        if (sidebar.classList.contains('open')) {
-            if (isSwipeRight) {
-                // Dragging sidebar back to the right -> closes it
-                closeSidebar();
-            }
-        }
-    }
-
-    // ── Auth Simulation ─────────────────────────────────────────────────────────
+    // Visibilidad de elementos por rol
     const currentRole = localStorage.getItem('role') || 'guest';
-
     const adminLinks    = document.querySelectorAll('.nav-admin');
     const juecesLinks   = document.querySelectorAll('.nav-jueces');
     const invitadosLinks = document.querySelectorAll('.nav-invitados');
     const logoutLinks   = document.querySelectorAll('.nav-logout');
 
-    // Role-based visibility logic initialization (Auth Simulation)
     if (currentRole === 'admin') {
         adminLinks.forEach(l    => l.style.display = 'block');
         juecesLinks.forEach(l   => l.style.display = 'none');
@@ -103,15 +85,13 @@ document.addEventListener('DOMContentLoaded', () => {
         invitadosLinks.forEach(l => l.style.display = 'block');
         logoutLinks.forEach(l   => l.style.display = 'block');
     } else {
-        // guest — not logged in
         adminLinks.forEach(l    => l.style.display = 'none');
         juecesLinks.forEach(l   => l.style.display = 'none');
         invitadosLinks.forEach(l => l.style.display = 'none');
         logoutLinks.forEach(l   => l.style.display = 'none');
     }
 
-    // ── Login handlers ───────────────────────────────────────────────────────────
-
+    // Modal de código de juez
     const juecesLoginBtn = document.getElementById('btn-jueces-login');
     const judgeModal = document.getElementById('judge-code-modal');
     const judgeInput = document.getElementById('judge-code-input');
@@ -161,7 +141,6 @@ document.addEventListener('DOMContentLoaded', () => {
         });
     }
 
-    // ── Logout handler ───────────────────────────────────────────────────────────
     logoutLinks.forEach(link => {
         link.addEventListener('click', (e) => {
             e.preventDefault();

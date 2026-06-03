@@ -6,6 +6,13 @@
     <title>Eventos - Diverxia</title>
     <link rel="icon" href="img/Favicon.png" type="image/png">
     <link rel="stylesheet" href="style.css">
+    <script>
+        const role = localStorage.getItem('role');
+        if (!role) {
+            alert('Acceso denegado. Por favor, selecciona tu rol.');
+            window.location.href = 'index.html';
+        }
+    </script>
 </head>
 <body>
     <div class="bg-geometry">
@@ -90,13 +97,6 @@
     <script type="module">
         import { supabase } from './supabase-config.js';
 
-        // Proteger el acceso a la lista de eventos
-        const userRoleCheck = localStorage.getItem('role');
-        if (!userRoleCheck) {
-            alert('Acceso denegado. Por favor, selecciona tu rol.');
-            window.location.href = 'index.html';
-        }
-
         let events = [];
 
         async function fetchEvents() {
@@ -119,7 +119,7 @@
             renderEvents();
         }
 
-        // ── Helpers ───────────────────────────────────────────────────────────
+        // Funciones auxiliares
         const today = new Date();
         today.setHours(0, 0, 0, 0);
 
@@ -146,7 +146,7 @@
             return { label: 'Próximo', cls: 'upcoming-status' };
         }
 
-        // ── Render ────────────────────────────────────────────────────────────
+        // Renderizado de eventos
         let currentSort = 'date-desc';
 
         function renderEvents() {
@@ -228,7 +228,7 @@
             });
         }
 
-        // ── Modal Selección de Equipos (Invitados) ───────────────────────────
+        // Selección de equipo para invitados
         const guestTeamModal = document.getElementById('guest-team-modal');
         const guestTeamsContainer = document.getElementById('guest-teams-container');
         const guestTeamCancel = document.getElementById('guest-team-cancel');
@@ -308,7 +308,7 @@
             });
         }
 
-        // ── Sort Buttons ──────────────────────────────────────────────────────
+        // Control de ordenación
         document.querySelectorAll('.filter-btn').forEach(btn => {
             btn.addEventListener('click', () => {
                 currentSort = btn.dataset.sort;

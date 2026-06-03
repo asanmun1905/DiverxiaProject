@@ -6,6 +6,12 @@
     <title>Panel Administrador - Diverxia</title>
     <link rel="icon" href="img/Favicon.png" type="image/png">
     <link rel="stylesheet" href="style.css">
+    <script>
+        if (localStorage.getItem('role') !== 'admin') {
+            alert('Acceso denegado. Debes iniciar sesión como administrador.');
+            window.location.href = 'login.html';
+        }
+    </script>
 </head>
 <body>
     <div class="bg-geometry">
@@ -153,12 +159,6 @@
     <script src="script.js"></script>
     <script type="module">
         import { supabase } from './supabase-config.js';
-
-        // Proteger el acceso al panel de administración
-        if (localStorage.getItem('role') !== 'admin') {
-            alert('Acceso denegado. Debes iniciar sesión como administrador.');
-            window.location.href = 'login.html';
-        }
 
         const listEl          = document.getElementById('admin-events-list');
         const bulkDeleteBtn   = document.getElementById('bulk-delete-btn');
