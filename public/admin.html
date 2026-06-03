@@ -154,6 +154,12 @@
     <script type="module">
         import { supabase } from './supabase-config.js';
 
+        // Proteger el acceso al panel de administración
+        if (localStorage.getItem('role') !== 'admin') {
+            alert('Acceso denegado. Debes iniciar sesión como administrador.');
+            window.location.href = 'login.html';
+        }
+
         const listEl          = document.getElementById('admin-events-list');
         const bulkDeleteBtn   = document.getElementById('bulk-delete-btn');
         const confirmModal    = document.getElementById('confirm-modal');

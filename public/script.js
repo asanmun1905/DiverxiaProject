@@ -1,4 +1,10 @@
 document.addEventListener('DOMContentLoaded', () => {
+    // Limpiar sesión al entrar a la pantalla de login para evitar estados huérfanos
+    if (window.location.pathname.includes('login.html')) {
+        localStorage.removeItem('role');
+        localStorage.removeItem('judge_code');
+    }
+
     const sidebar          = document.getElementById('sidebar');
     const hamburgerHeader  = document.getElementById('hamburger-header');
     const hamburgerSidebar = document.getElementById('hamburger-sidebar');
@@ -83,8 +89,8 @@ document.addEventListener('DOMContentLoaded', () => {
     // Role-based visibility logic initialization (Auth Simulation)
     if (currentRole === 'admin') {
         adminLinks.forEach(l    => l.style.display = 'block');
-        juecesLinks.forEach(l   => l.style.display = 'block');
-        invitadosLinks.forEach(l => l.style.display = 'block');
+        juecesLinks.forEach(l   => l.style.display = 'none');
+        invitadosLinks.forEach(l => l.style.display = 'none');
         logoutLinks.forEach(l   => l.style.display = 'block');
     } else if (currentRole === 'juez') {
         adminLinks.forEach(l    => l.style.display = 'none');
@@ -105,12 +111,6 @@ document.addEventListener('DOMContentLoaded', () => {
     }
 
     // ── Login handlers ───────────────────────────────────────────────────────────
-    const adminLoginBtn = document.getElementById('btn-admin-login');
-    if (adminLoginBtn) {
-        adminLoginBtn.addEventListener('click', () => {
-            localStorage.setItem('role', 'admin');
-        });
-    }
 
     const juecesLoginBtn = document.getElementById('btn-jueces-login');
     const judgeModal = document.getElementById('judge-code-modal');

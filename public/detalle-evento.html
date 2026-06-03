@@ -74,6 +74,7 @@
                     <p id="table-subtitle" class="subtitle" style="margin-bottom: 0;">Rellena las puntuaciones de cada prueba (1 a 5 puntos).</p>
                     <div style="display: flex; align-items: center; gap: 10px;">
                         <button id="btn-change-team" class="filter-btn" style="display: none; padding: 4px 12px; font-size: 0.85rem; border-radius: 12px; cursor: pointer; border: 1px solid rgba(49, 183, 219, 0.3); background: rgba(49, 183, 219, 0.05); color: var(--primary);">Cambiar de Equipo</button>
+                        <button id="btn-reset-scores" class="filter-btn" style="display: none; padding: 4px 12px; font-size: 0.85rem; border-radius: 12px; cursor: pointer; border: 1px solid rgba(239, 68, 68, 0.4); background: rgba(239, 68, 68, 0.05); color: #ef4444; transition: all 0.3s ease;">Borrar Puntuaciones</button>
                         <span id="judge-identity-badge" style="background: rgba(49, 183, 219, 0.1); border: 1px solid var(--primary); color: var(--primary); padding: 4px 12px; border-radius: 12px; font-weight: bold; font-size: 0.85rem;"></span>
                     </div>
                 </div>
@@ -258,6 +259,13 @@
             }
             eventDetail = evData;
 
+            // Restringir el acceso a invitados y jueces a eventos que no estén en curso
+            if ((userRole === 'invitado' || userRole === 'juez') && eventDetail.estado !== 'abierto') {
+                alert('Solo se puede acceder a eventos en curso.');
+                window.location.href = 'eventos.html';
+                return;
+            }
+
             // Renderizar info del evento
             document.getElementById('event-title').textContent = eventDetail.nombre;
             document.getElementById('event-desc').textContent = eventDetail.descripcion || 'Sin descripción';
@@ -415,42 +423,51 @@
 
         // Función para calcular la puntuación final de un equipo en una prueba usando la nueva fórmula
         function calculateTeamTrialScore(teamId, trialId) {
-            // Obtener los UUIDs de los jueces
+            // Obtener los UUIDs de los jueces (excluyendo admin si procede)
             const judgeUuids = Object.keys(userMap)
                 .filter(code => code.startsWith('DIVERXIAJUEZ'))
                 .map(code => userMap[code]);
 
-            // 1. Obtener la media de los votos de los equipos (votos de invitados) en esta prueba
-            // Excluimos al propio equipo de la media (la media de los demás equipos, dividiendo entre uno menos)
-            const guestAverages = teams
-                .filter(t => t.id !== teamId)
-                .map(t => {
-                    const guestScores = scores.filter(s => s.equipo_id === t.id && s.prueba_id === trialId && !judgeUuids.includes(s.de_usuario));
-                    if (guestScores.length > 0) {
-                        return guestScores.reduce((sum, s) => sum + parseInt(s.valor || 0), 0) / guestScores.length;
-                    }
-                    return null;
-                }).filter(val => val !== null);
+            // Calcular el número total de invitados en todos los equipos (basado en la simulación estable)
+            let totalGuests = 0;
+            teams.forEach(t => {
+                const hashInput = t.id.replace(/-/g, '').substring(0, 4);
+                let count = (parseInt(hashInput, 16) % 5) + 3;
+                if (t.id === localStorage.getItem(`joined_team_${eventId}`)) {
+                    count += 1;
+                }
+                totalGuests += count;
+            });
+            totalGuests = Math.max(1, totalGuests);
 
-            const overallGuestAvg = guestAverages.length > 0
-                ? guestAverages.reduce((sum, val) => sum + val, 0) / guestAverages.length
-                : 0;
+            // 1. Calcular puntuación de los invitados (X / totalGuests)
+            const guestScores = scores.filter(s => 
+                s.equipo_id === teamId && 
+                s.prueba_id === trialId && 
+                !judgeUuids.includes(s.de_usuario) && 
+                s.de_usuario !== userMap['admin']
+            );
+            
+            // Los invitados que no han votado cuentan como 5 puntos (nota máxima)
+            const missingGuestVotesCount = Math.max(0, totalGuests - guestScores.length);
+            const X = guestScores.reduce((sum, s) => sum + parseInt(s.valor || 0), 0) + (missingGuestVotesCount * 5);
+            const guestScorePart = X / totalGuests;
 
-            // 2. Obtener la puntuación que han puesto los jueces a este equipo específico en esta prueba
-            const judgeScores = scores.filter(s => s.equipo_id === teamId && s.prueba_id === trialId && judgeUuids.includes(s.de_usuario));
-            const avgJudges = judgeScores.length > 0
-                ? judgeScores.reduce((sum, s) => sum + parseInt(s.valor || 0), 0) / judgeScores.length
-                : 0;
+            // 2. Calcular puntuación de los jueces (Y / expectedJudgesCount)
+            const judgeScores = scores.filter(s => 
+                s.equipo_id === teamId && 
+                s.prueba_id === trialId && 
+                judgeUuids.includes(s.de_usuario)
+            );
+            
+            const expectedJudgesCount = Math.max(1, judgeUuids.length || 5);
+            // Los jueces que no han votado cuentan como 5 puntos (nota máxima)
+            const missingJudgeVotesCount = Math.max(0, expectedJudgesCount - judgeScores.length);
+            const Y_sum = judgeScores.reduce((sum, s) => sum + parseInt(s.valor || 0), 0) + (missingJudgeVotesCount * 5);
+            const Y = Y_sum / expectedJudgesCount;
 
-            // 3. Hacer de nuevo una media entre la media de los equipos (invitados) y la nota de los jueces
-            if (overallGuestAvg > 0 && avgJudges > 0) {
-                return (overallGuestAvg + avgJudges) / 2;
-            } else if (avgJudges > 0) {
-                return avgJudges;
-            } else if (overallGuestAvg > 0) {
-                return overallGuestAvg;
-            }
-            return 0;
+            // 3. Aplicar la fórmula: (guestScorePart + Y) / 2
+            return (guestScorePart + Y) / 2;
         }
 
         // Renderizar Tabla de Puntuaciones
@@ -477,6 +494,13 @@
                 container.appendChild(spanName);
 
                 if (userRole === 'admin') {
+                    const adminActionsRow = document.createElement('div');
+                    adminActionsRow.style.display = 'flex';
+                    adminActionsRow.style.alignItems = 'center';
+                    adminActionsRow.style.gap = '8px';
+                    adminActionsRow.style.width = '100%';
+
+                    // 1. Switch de activación
                     const labelSwitch = document.createElement('label');
                     labelSwitch.className = 'trial-switch';
                     labelSwitch.title = isBlocked ? 'Activar votación' : 'Desactivar votación';
@@ -491,12 +515,63 @@
                     
                     labelSwitch.appendChild(input);
                     labelSwitch.appendChild(spanSlider);
-                    container.appendChild(labelSwitch);
-                    
+                    adminActionsRow.appendChild(labelSwitch);
+
                     input.addEventListener('change', async () => {
                         const shouldEnable = input.checked;
                         await toggleTrialVoting(trial.id, shouldEnable);
                     });
+
+                    // 2. Botón de borrar puntuaciones de esta prueba
+                    const btnClear = document.createElement('button');
+                    btnClear.className = 'trial-clear-btn';
+                    btnClear.title = 'Borrar puntuaciones de esta prueba';
+                    btnClear.innerHTML = `
+                        <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
+                            <polyline points="3 6 5 6 21 6"></polyline>
+                            <path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"></path>
+                            <line x1="10" y1="11" x2="10" y2="17"></line>
+                            <line x1="14" y1="11" x2="14" y2="17"></line>
+                        </svg>
+                    `;
+                    btnClear.style.background = 'rgba(239, 68, 68, 0.1)';
+                    btnClear.style.border = '1px solid rgba(239, 68, 68, 0.3)';
+                    btnClear.style.color = '#ef4444';
+                    btnClear.style.borderRadius = '6px';
+                    btnClear.style.padding = '4px 6px';
+                    btnClear.style.cursor = 'pointer';
+                    btnClear.style.display = 'inline-flex';
+                    btnClear.style.alignItems = 'center';
+                    btnClear.style.justifyContent = 'center';
+                    btnClear.style.transition = 'all 0.2s ease';
+                    
+                    btnClear.addEventListener('mouseenter', () => {
+                        btnClear.style.background = 'rgba(239, 68, 68, 0.2)';
+                    });
+                    btnClear.addEventListener('mouseleave', () => {
+                        btnClear.style.background = 'rgba(239, 68, 68, 0.1)';
+                    });
+
+                    btnClear.addEventListener('click', async (e) => {
+                        e.stopPropagation();
+                        if (confirm(`¿Estás seguro de que deseas borrar TODAS las puntuaciones de la prueba "${trial.nombre}"?`)) {
+                            const { error } = await supabase
+                                .from('puntuaciones')
+                                .delete()
+                                .eq('prueba_id', trial.id);
+                            
+                            if (error) {
+                                console.error('Error al borrar puntuaciones de la prueba:', error);
+                                alert('Error al borrar puntuaciones: ' + error.message);
+                            } else {
+                                alert(`Se han borrado las puntuaciones de la prueba "${trial.nombre}".`);
+                                await reloadScores();
+                            }
+                        }
+                    });
+
+                    adminActionsRow.appendChild(btnClear);
+                    container.appendChild(adminActionsRow);
                 } else {
                     if (isBlocked) {
                         const badge = document.createElement('span');

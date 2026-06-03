@@ -104,7 +104,7 @@
             }
             
             const userRole = localStorage.getItem('role');
-            if (userRole === 'invitado') {
+            if (userRole === 'invitado' || userRole === 'juez') {
                 events = data.filter(ev => ev.estado === 'abierto');
             } else {
                 events = data;
@@ -178,29 +178,44 @@
 
                 // Configurar click
                 const userRole = localStorage.getItem('role');
-                const isEventActive = ev.estado === 'abierto' || status === 'active';
+                const isEventActive = ev.estado === 'abierto';
 
-                if (userRole === 'admin' || userRole === 'juez') {
+                if (userRole === 'admin') {
+                    card.style.cursor = 'pointer';
+                    card.addEventListener('click', () => {
+                        window.location.href = `detalle-evento.html?id=${ev.id}`;
+                    });
+                } else if (userRole === 'juez') {
                     if (isEventActive) {
                         card.style.cursor = 'pointer';
                         card.addEventListener('click', () => {
                             window.location.href = `detalle-evento.html?id=${ev.id}`;
                         });
                     } else {
+                        card.style.opacity = '0.5';
+                        card.style.cursor = 'not-allowed';
                         card.addEventListener('click', () => {
-                            alert('Este evento no está activo. Solo se puede entrar en eventos activos.');
+                            alert('Este evento no está en curso. Solo se puede entrar en eventos en curso.');
                         });
                     }
                 } else if (userRole === 'invitado') {
-                    card.style.cursor = 'pointer';
-                    card.addEventListener('click', () => {
-                        const joinedTeam = localStorage.getItem(`joined_team_${ev.id}`);
-                        if (joinedTeam) {
-                            window.location.href = `detalle-evento.html?id=${ev.id}`;
-                        } else {
-                            openGuestTeamModal(ev);
-                        }
-                    });
+                    if (isEventActive) {
+                        card.style.cursor = 'pointer';
+                        card.addEventListener('click', () => {
+                            const joinedTeam = localStorage.getItem(`joined_team_${ev.id}`);
+                            if (joinedTeam) {
+                                window.location.href = `detalle-evento.html?id=${ev.id}`;
+                            } else {
+                                openGuestTeamModal(ev);
+                            }
+                        });
+                    } else {
+                        card.style.opacity = '0.5';
+                        card.style.cursor = 'not-allowed';
+                        card.addEventListener('click', () => {
+                            alert('Este evento no está en curso. Solo se puede entrar en eventos en curso.');
+                        });
+                    }
                 }
                 list.appendChild(card);
             });

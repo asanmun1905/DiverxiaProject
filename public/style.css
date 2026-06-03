@@ -754,10 +754,6 @@ dialog::backdrop {
     margin-bottom: 20px;
 }
 
-/* ──────────────────────────────────────────
-   Universal Events Wrapper & Cards Styles 
-   (Shared by eventos.html & admin.html)
-─────────────────────────────────────────── */
 .events-wrapper {
     width: 100%;
     max-width: 900px;
@@ -827,7 +823,7 @@ dialog::backdrop {
     max-height: calc(100vh - 280px);
     overflow-y: auto;
     padding-right: 6px;
-    padding-bottom: 40px; /* Evita que la sombra del último elemento se corte y parezca una línea */
+    padding-bottom: 40px;
     -webkit-overflow-scrolling: touch; 
     overscroll-behavior-y: contain;
 }
@@ -871,7 +867,7 @@ dialog::backdrop {
 .event-card:hover {
     background: rgba(49, 183, 219, 0.08);
     border-color: rgba(49, 183, 219, 0.4);
-    transform: scale(1.015); /* Eliminamos el translateX para evitar el bug de la línea azul */
+    transform: scale(1.015);
     box-shadow: 0 15px 35px rgba(0,0,0,0.3);
 }
 
