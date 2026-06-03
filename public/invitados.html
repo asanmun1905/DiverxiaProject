@@ -55,5 +55,13 @@
     </footer>
 
     <script src="script.js"></script>
+    <script>
+        // Proteger el acceso al panel de invitados
+        const role = localStorage.getItem('role');
+        if (role !== 'invitado' && role !== 'admin') {
+            alert('Acceso denegado. Debes ingresar como Invitado.');
+            window.location.href = 'index.html';
+        }
+    </script>
 </body>
 </html>

@@ -139,6 +139,13 @@
     <script type="module">
         import { supabase, fetchUserMap } from './supabase-config.js';
 
+        // Proteger el acceso al detalle de eventos
+        const userRoleCheck = localStorage.getItem('role');
+        if (!userRoleCheck) {
+            alert('Acceso denegado. Por favor, selecciona tu rol.');
+            window.location.href = 'index.html';
+        }
+
         // Obtener el ID del evento de los parámetros de la URL
         const urlParams = new URLSearchParams(window.location.search);
         const eventId = urlParams.get('id');

@@ -90,6 +90,13 @@
     <script type="module">
         import { supabase } from './supabase-config.js';
 
+        // Proteger el acceso a la lista de eventos
+        const userRoleCheck = localStorage.getItem('role');
+        if (!userRoleCheck) {
+            alert('Acceso denegado. Por favor, selecciona tu rol.');
+            window.location.href = 'index.html';
+        }
+
         let events = [];
 
         async function fetchEvents() {
