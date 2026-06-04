@@ -132,6 +132,12 @@
                 </select>
             </div>
 
+            <!-- Número de jueces (visible siempre, editable en crear y editar) -->
+            <div class="form-group">
+                <label class="form-label" for="event-modal-jueces">Nº Jueces (max 5)</label>
+                <input type="number" id="event-modal-jueces" class="form-input" min="1" max="5" value="5">
+            </div>
+
             <!-- Inicialización de pruebas y equipos (solo para nuevos eventos) -->
             <div id="event-modal-init-fields" class="form-row">
                 <div class="form-group">
@@ -195,6 +201,7 @@
             document.getElementById('event-modal-fecha').value = '';
             document.getElementById('event-modal-fecha-fin').value = '';
             document.getElementById('event-modal-estado').value = 'abierto';
+            document.getElementById('event-modal-jueces').value = '5';
             document.getElementById('event-modal-pruebas').value = '5';
             document.getElementById('event-modal-equipos').value = '8';
             document.getElementById('event-modal-init-fields').style.display = 'grid';
@@ -212,13 +219,14 @@
             const fecha     = document.getElementById('event-modal-fecha').value;
             const fecha_fin = document.getElementById('event-modal-fecha-fin').value || null;
             const estado    = document.getElementById('event-modal-estado').value;
+            const num_jueces = Math.min(5, Math.max(1, parseInt(document.getElementById('event-modal-jueces').value) || 5));
 
             if (!nombre || !fecha) {
                 alert('El nombre y la fecha de inicio son obligatorios.');
                 return;
             }
 
-            const payload = { nombre, descripcion: desc, fecha, fecha_fin, estado };
+            const payload = { nombre, descripcion: desc, fecha, fecha_fin, estado, num_jueces };
 
             if (id) {
                 // Editar
@@ -271,6 +279,7 @@
             document.getElementById('event-modal-fecha').value = ev.fecha;
             document.getElementById('event-modal-fecha-fin').value = ev.fecha_fin || '';
             document.getElementById('event-modal-estado').value = ev.estado || 'abierto';
+            document.getElementById('event-modal-jueces').value = ev.num_jueces ?? 5;
             document.getElementById('event-modal-init-fields').style.display = 'none';
             eventModal.showModal();
         }

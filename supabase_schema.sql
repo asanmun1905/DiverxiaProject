@@ -32,6 +32,7 @@ CREATE TABLE IF NOT EXISTS public.eventos (
     fecha_fin DATE,
     estado TEXT DEFAULT 'abierto' NOT NULL CHECK (estado IN ('abierto', 'cerrado', 'finalizado')),
     display_order INTEGER DEFAULT 0 NOT NULL,
+    num_jueces INTEGER DEFAULT 5 NOT NULL CHECK (num_jueces >= 1 AND num_jueces <= 5),
     created_at TIMESTAMP WITH TIME ZONE DEFAULT timezone('utc'::text, now()) NOT NULL
 );
 
