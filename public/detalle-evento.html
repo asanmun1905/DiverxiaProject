@@ -660,27 +660,24 @@
                     input.className = 'table-score-input';
                     input.value = val;
                     
-                    // Solo permitir edición si el evento está abierto, la prueba no está bloqueada, no es el propio equipo del participante,
+                    // Solo permitir edición si el evento está abierto, la prueba no está bloqueada para el usuario, no es el propio equipo del participante,
                     // y los participantes solo pueden votar en la primera prueba (trialIndex === 0)
                     const isSelfVoting = ((userRole === 'participante' || userRole === 'invitado') && team.id === joinedTeamId);
                     const isRestrictedForGuest = ((userRole === 'participante' || userRole === 'invitado') && trialIndex > 0);
+                    const isBlockedForUser = isBlocked && (userRole === 'participante' || userRole === 'invitado');
 
-                    if (eventDetail.estado !== 'abierto' || isBlocked || isSelfVoting || isRestrictedForGuest) {
+                    if (eventDetail.estado !== 'abierto' || isBlockedForUser || isSelfVoting || isRestrictedForGuest) {
                         input.disabled = true;
-                        if (isBlocked) {
+                        if (isBlockedForUser || isRestrictedForGuest) {
                             input.classList.add('locked-input');
                             tdScore.classList.add('locked-cell');
                             input.placeholder = '🔒';
+                            input.title = isRestrictedForGuest ? 'Prueba desactivada para participantes' : 'Prueba bloqueada';
                         } else if (isSelfVoting) {
                             input.classList.add('locked-input');
                             tdScore.classList.add('locked-cell');
                             input.placeholder = '🏠';
                             input.title = 'No puedes votar a tu propio equipo';
-                        } else if (isRestrictedForGuest) {
-                            input.classList.add('locked-input');
-                            tdScore.classList.add('locked-cell');
-                            input.placeholder = 'Juez';
-                            input.title = 'Solo los jueces pueden puntuar esta prueba';
                         }
                     }
 

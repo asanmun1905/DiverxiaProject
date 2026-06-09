@@ -253,8 +253,27 @@
                     for (let i = 1; i <= numPruebas; i++) {
                         trialsToInsert.push({ evento_id: newEvent.id, nombre: `Prueba ${i}` });
                     }
-                    const { error: errPruebas } = await supabase.from('pruebas').insert(trialsToInsert);
+                    const { data: insertedTrials, error: errPruebas } = await supabase.from('pruebas').insert(trialsToInsert).select();
                     if (errPruebas) console.error('Error al insertar pruebas:', errPruebas);
+
+                    // Insertar bloqueos para pruebas 2 en adelante por defecto
+                    const { data: { user } } = await supabase.auth.getUser();
+                    const adminUuid = user ? user.id : null;
+                    if (insertedTrials && insertedTrials.length > 1 && adminUuid) {
+                        insertedTrials.sort((a, b) => a.nombre.localeCompare(b.nombre, 'es'));
+                        const blocksToInsert = [];
+                        for (let i = 1; i < insertedTrials.length; i++) {
+                            blocksToInsert.push({
+                                equipo_id: null,
+                                prueba_id: insertedTrials[i].id,
+                                de_usuario: adminUuid,
+                                tipo: 'juez',
+                                valor: 5
+                            });
+                        }
+                        const { error: errBlocks } = await supabase.from('puntuaciones').insert(blocksToInsert);
+                        if (errBlocks) console.error('Error al insertar bloqueos por defecto:', errBlocks);
+                    }
 
                     // Insertar Equipos
                     const numEquipos = Math.min(16, Math.max(1, parseInt(document.getElementById('event-modal-equipos').value) || 8));
