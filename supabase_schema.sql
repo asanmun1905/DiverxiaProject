@@ -15,7 +15,8 @@ CREATE EXTENSION IF NOT EXISTS "uuid-ossp";
 CREATE TABLE IF NOT EXISTS public.usuarios (
     id UUID PRIMARY KEY,
     nombre TEXT NOT NULL,
-    rol TEXT NOT NULL CHECK (rol IN ('admin', 'juez', 'invitado')),
+    rol TEXT NOT NULL CHECK (rol IN ('admin', 'juez', 'participante')),
+    equipo_id UUID REFERENCES public.equipos(id) ON DELETE SET NULL,
     created_at TIMESTAMP WITH TIME ZONE DEFAULT timezone('utc'::text, now()) NOT NULL
 );
 
@@ -32,7 +33,7 @@ CREATE TABLE IF NOT EXISTS public.eventos (
     fecha_fin DATE,
     estado TEXT DEFAULT 'abierto' NOT NULL CHECK (estado IN ('abierto', 'cerrado', 'finalizado')),
     display_order INTEGER DEFAULT 0 NOT NULL,
-    num_jueces INTEGER DEFAULT 5 NOT NULL CHECK (num_jueces >= 1 AND num_jueces <= 5),
+    num_jueces INTEGER DEFAULT 5 NOT NULL CHECK (num_jueces >= 1 AND num_jueces <= 10),
     created_at TIMESTAMP WITH TIME ZONE DEFAULT timezone('utc'::text, now()) NOT NULL
 );
 
@@ -64,7 +65,7 @@ CREATE TABLE IF NOT EXISTS public.puntuaciones (
     equipo_id UUID REFERENCES public.equipos(id) ON DELETE CASCADE, -- Nullable para permitir bloquear pruebas
     prueba_id UUID REFERENCES public.pruebas(id) ON DELETE CASCADE NOT NULL,
     de_usuario UUID REFERENCES public.usuarios(id) ON DELETE CASCADE NOT NULL,
-    valor INTEGER NOT NULL CHECK (valor >= 1 AND valor <= 5),
+    valor INTEGER NOT NULL CHECK (valor >= 0 AND valor <= 1000),
     tipo TEXT, -- Ej: 'juez' o null
     created_at TIMESTAMP WITH TIME ZONE DEFAULT timezone('utc'::text, now()) NOT NULL
 );

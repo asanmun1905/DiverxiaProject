@@ -3,13 +3,13 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Invitados - Diverxia</title>
+    <title>Participantes - Diverxia</title>
     <link rel="icon" href="img/Favicon.png" type="image/png">
     <link rel="stylesheet" href="style.css">
     <script>
         const role = localStorage.getItem('role');
-        if (role !== 'invitado' && role !== 'admin') {
-            alert('Acceso denegado. Debes ingresar como Invitado.');
+        if (role !== 'participante' && role !== 'admin') {
+            alert('Acceso denegado. Debes ingresar como Participante.');
             window.location.href = 'index.html';
         }
     </script>
@@ -38,7 +38,7 @@
         </div>
         <a href="index.html">Inicio</a>
         <a href="roles.html">Comenzar</a>
-        <a href="invitados.html" class="nav-invitados" style="display: none;">Panel Invitados</a>
+        <a href="invitados.html" class="nav-participantes" style="display: none;">Panel Participantes</a>
         <a href="admin.html" class="nav-admin" style="display: none;">Panel Administrador</a>
         <a href="jueces.html" class="nav-jueces" style="display: none;">Panel Jueces</a>
         <a href="https://www.diverxiaconsulting.com" target="_blank">Sobre Nosotros</a>
@@ -47,7 +47,7 @@
 
     <main>
         <div class="container page-content" style="max-width: 900px;">
-            <h1 style="text-align: center;">Área de <span>Invitados</span></h1>
+            <h1 style="text-align: center;">Área de <span>Participantes</span></h1>
             <p style="text-align: center;" class="subtitle">Disfruta del evento y compite con los demás.</p>
             
             <div style="background: rgba(0,0,0,0.2); padding: 30px; border-radius: 15px; margin-top: 30px;">

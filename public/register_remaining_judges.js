@@ -4,7 +4,7 @@ const headers = { apikey, 'Content-Type': 'application/json' };
 const sleep = (ms) => new Promise(resolve => setTimeout(resolve, ms));
 
 async function registerUser(email, name, role) {
-  const password = 'password123';
+  const password = 'Juegodetronos';
   console.log(`Starting registration for ${email}...`);
   
   let signupRes = await fetch('https://voalryklgwuphgfwvobl.supabase.co/auth/v1/signup', {

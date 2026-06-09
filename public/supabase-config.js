@@ -16,8 +16,8 @@ export async function fetchUserMap() {
         if (u.nombre === 'Administrador') {
             userMap['admin'] = u.id;
         } else if (u.nombre && u.nombre.startsWith('Juez ')) {
-            const num = u.nombre.split(' ')[1];
-            const code = `DIVERXIAJUEZ0${num}`;
+            const num = parseInt(u.nombre.split(' ')[1]);
+            const code = `DIVERXIAJUEZ${num.toString().padStart(2, '0')}`;
             userMap[code] = u.id;
         }
     });
@@ -28,7 +28,10 @@ export async function fetchUserMap() {
         const fallback1 = validUuids[0];
         const fallback2 = validUuids[1] || fallback1;
         
-        const allCodes = ['admin', 'DIVERXIAJUEZ01', 'DIVERXIAJUEZ02', 'DIVERXIAJUEZ03', 'DIVERXIAJUEZ04', 'DIVERXIAJUEZ05'];
+        const allCodes = ['admin'];
+        for (let i = 1; i <= 10; i++) {
+            allCodes.push(`DIVERXIAJUEZ${i.toString().padStart(2, '0')}`);
+        }
         allCodes.forEach((code, index) => {
             if (!userMap[code]) {
                 userMap[code] = index % 2 === 0 ? fallback1 : fallback2;

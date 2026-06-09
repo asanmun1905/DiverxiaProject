@@ -37,7 +37,7 @@
         </div>
         <a href="index.html">Inicio</a>
         <a href="roles.html">Comenzar</a>
-        <a href="invitados.html" class="nav-invitados" style="display: none;">Panel Invitados</a>
+        <a href="invitados.html" class="nav-participantes" style="display: none;">Panel Participantes</a>
         <a href="admin.html" class="nav-admin" style="display: none;">Panel Administrador</a>
         <a href="jueces.html" class="nav-jueces" style="display: none;">Panel Jueces</a>
         <a href="https://www.diverxiaconsulting.com" target="_blank">Sobre Nosotros</a>
@@ -134,8 +134,8 @@
 
             <!-- Número de jueces (visible siempre, editable en crear y editar) -->
             <div class="form-group">
-                <label class="form-label" for="event-modal-jueces">Nº Jueces (max 5)</label>
-                <input type="number" id="event-modal-jueces" class="form-input" min="1" max="5" value="5">
+                <label class="form-label" for="event-modal-jueces">Nº Jueces (max 10)</label>
+                <input type="number" id="event-modal-jueces" class="form-input" min="1" max="10" value="5">
             </div>
 
             <!-- Inicialización de pruebas y equipos (solo para nuevos eventos) -->
@@ -219,7 +219,7 @@
             const fecha     = document.getElementById('event-modal-fecha').value;
             const fecha_fin = document.getElementById('event-modal-fecha-fin').value || null;
             const estado    = document.getElementById('event-modal-estado').value;
-            const num_jueces = Math.min(5, Math.max(1, parseInt(document.getElementById('event-modal-jueces').value) || 5));
+            const num_jueces = Math.min(10, Math.max(1, parseInt(document.getElementById('event-modal-jueces').value) || 5));
 
             if (!nombre || !fecha) {
                 alert('El nombre y la fecha de inicio son obligatorios.');

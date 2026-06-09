@@ -66,7 +66,7 @@ document.addEventListener('DOMContentLoaded', () => {
     const currentRole = localStorage.getItem('role') || 'guest';
     const adminLinks    = document.querySelectorAll('.nav-admin');
     const juecesLinks   = document.querySelectorAll('.nav-jueces');
-    const invitadosLinks = document.querySelectorAll('.nav-invitados');
+    const invitadosLinks = document.querySelectorAll('.nav-invitados, .nav-participantes');
     const logoutLinks   = document.querySelectorAll('.nav-logout');
 
     if (currentRole === 'admin') {
@@ -79,7 +79,7 @@ document.addEventListener('DOMContentLoaded', () => {
         juecesLinks.forEach(l   => l.style.display = 'block');
         invitadosLinks.forEach(l => l.style.display = 'none');
         logoutLinks.forEach(l   => l.style.display = 'block');
-    } else if (currentRole === 'invitado') {
+    } else if (currentRole === 'participante' || currentRole === 'invitado') {
         adminLinks.forEach(l    => l.style.display = 'none');
         juecesLinks.forEach(l   => l.style.display = 'none');
         invitadosLinks.forEach(l => l.style.display = 'block');
@@ -113,7 +113,10 @@ document.addEventListener('DOMContentLoaded', () => {
 
         const validateAndSubmit = () => {
             const code = judgeInput.value.trim().toUpperCase();
-            const validCodes = ['DIVERXIAJUEZ01', 'DIVERXIAJUEZ02', 'DIVERXIAJUEZ03', 'DIVERXIAJUEZ04', 'DIVERXIAJUEZ05'];
+            const validCodes = [];
+            for (let i = 1; i <= 10; i++) {
+                validCodes.push(`DIVERXIAJUEZ${i.toString().padStart(2, '0')}`);
+            }
             
             if (validCodes.includes(code)) {
                 localStorage.setItem('role', 'juez');
@@ -133,10 +136,10 @@ document.addEventListener('DOMContentLoaded', () => {
         });
     }
 
-    const invitadosLoginBtn = document.getElementById('btn-invitados-login');
+    const invitadosLoginBtn = document.getElementById('btn-invitados-login') || document.getElementById('btn-participantes-login');
     if (invitadosLoginBtn) {
         invitadosLoginBtn.addEventListener('click', () => {
-            localStorage.setItem('role', 'invitado');
+            localStorage.setItem('role', 'participante');
             localStorage.removeItem('judge_code');
         });
     }

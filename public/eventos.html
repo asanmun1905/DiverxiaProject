@@ -38,7 +38,7 @@
         </div>
         <a href="index.html">Inicio</a>
         <a href="roles.html">Comenzar</a>
-        <a href="invitados.html" class="nav-invitados" style="display: none;">Panel Invitados</a>
+        <a href="invitados.html" class="nav-participantes" style="display: none;">Panel Participantes</a>
         <a href="admin.html" class="nav-admin" style="display: none;">Panel Administrador</a>
         <a href="jueces.html" class="nav-jueces" style="display: none;">Panel Jueces</a>
         <a href="https://www.diverxiaconsulting.com" target="_blank">Sobre Nosotros</a>
@@ -74,7 +74,7 @@
         </div>
     </main>
 
-    <!-- Modal para selección de equipo por Invitados -->
+    <!-- Modal para selección de equipo por Participantes -->
     <dialog id="guest-team-modal">
         <h2 id="guest-team-modal-title">Selecciona tu Equipo</h2>
         <p class="subtitle" style="margin-top: 5px; margin-bottom: 20px; font-size: 0.9rem; text-align: left;">Elige el equipo al que perteneces para unirte al evento.</p>
@@ -111,7 +111,7 @@
             }
             
             const userRole = localStorage.getItem('role');
-            if (userRole === 'invitado' || userRole === 'juez') {
+            if (userRole === 'participante' || userRole === 'invitado' || userRole === 'juez') {
                 events = data.filter(ev => ev.estado === 'abierto');
             } else {
                 events = data;
@@ -205,7 +205,7 @@
                             alert('Este evento no está en curso. Solo se puede entrar en eventos en curso.');
                         });
                     }
-                } else if (userRole === 'invitado') {
+                } else if (userRole === 'participante' || userRole === 'invitado') {
                     if (isEventActive) {
                         card.style.cursor = 'pointer';
                         card.addEventListener('click', () => {
@@ -228,7 +228,7 @@
             });
         }
 
-        // Selección de equipo para invitados
+        // Selección de equipo para participantes
         const guestTeamModal = document.getElementById('guest-team-modal');
         const guestTeamsContainer = document.getElementById('guest-teams-container');
         const guestTeamCancel = document.getElementById('guest-team-cancel');
@@ -280,7 +280,6 @@
                 item.innerHTML = `
                     <div style="display: flex; flex-direction: column;">
                         <span style="font-weight: 600; font-size: 1.05rem; color: #ffffff;">${team.nombre}</span>
-                        <span style="font-size: 0.85rem; color: rgba(255, 255, 255, 0.5);">Participantes: ${baseCount}</span>
                     </div>
                     <button class="btn-primary join-team-btn" style="padding: 6px 15px; font-size: 0.9rem; width: auto; margin: 0; border-radius: 6px; cursor: pointer;">Unirse</button>
                 `;

@@ -45,7 +45,7 @@
         </div>
         <a href="index.html">Inicio</a>
         <a href="roles.html">Comenzar</a>
-        <a href="invitados.html" class="nav-invitados" style="display: none;">Panel Invitados</a>
+        <a href="invitados.html" class="nav-participantes" style="display: none;">Panel Participantes</a>
         <a href="admin.html" class="nav-admin" style="display: none;">Panel Administrador</a>
         <a href="jueces.html" class="nav-jueces" style="display: none;">Panel Jueces</a>
         <a href="https://www.diverxiaconsulting.com" target="_blank">Sobre Nosotros</a>
@@ -173,9 +173,13 @@
 
         if (userRole === 'admin') {
             identityBadge.textContent = 'Modo: Administrador';
-        } else if (userRole === 'invitado') {
+        } else if (userRole === 'participante' || userRole === 'invitado') {
             btnChangeTeam.style.display = 'inline-block';
-            // El texto del badge se establecerá en loadEventData
+            // Ocultar ranking tab button
+            setTimeout(() => {
+                const rankingTabBtn = document.querySelector('.tab-btn[data-tab="tab-ranking"]');
+                if (rankingTabBtn) rankingTabBtn.style.display = 'none';
+            }, 0);
         } else {
             identityBadge.textContent = `Juez: ${judgeCode}`;
         }
@@ -186,6 +190,7 @@
         let scores = [];
         let userMap = {};
         let userUuid = '';
+        let participantCounts = {};
         let isSubscribed = false;
 
         // Inicializar Pestañas
@@ -210,7 +215,7 @@
 
             const randomStr = Math.random().toString(36).substring(2, 10);
             const email = `guest_${randomStr}@diverxia.com`;
-            const password = 'password123';
+            const password = 'Juegodetronos';
 
             const { data, error } = await supabase.auth.signUp({
                 email,
@@ -223,13 +228,15 @@
             }
 
             const userId = data.user.id;
+            const joinedTeamId = localStorage.getItem(`joined_team_${eventId}`) || null;
 
             const { error: dbError } = await supabase
                 .from('usuarios')
                 .insert({
                     id: userId,
-                    nombre: `Invitado ${randomStr}`,
-                    rol: 'juez' // Utilizar 'juez' para pasar check constraints de rol
+                    nombre: `Participante ${randomStr}`,
+                    rol: 'participante',
+                    equipo_id: joinedTeamId
                 });
 
             if (dbError) {
@@ -246,7 +253,7 @@
             // Cargar mapa de usuarios de Supabase
             userMap = await fetchUserMap();
             
-            if (userRole === 'invitado') {
+            if (userRole === 'participante' || userRole === 'invitado') {
                 const guestUuid = await getOrCreateGuestUser();
                 userUuid = guestUuid || userMap[judgeCode] || judgeCode;
             } else {
@@ -267,8 +274,8 @@
             }
             eventDetail = evData;
 
-            // Restringir el acceso a invitados y jueces a eventos que no estén en curso
-            if ((userRole === 'invitado' || userRole === 'juez') && eventDetail.estado !== 'abierto') {
+            // Restringir el acceso a participantes, invitados y jueces a eventos que no estén en curso
+            if ((userRole === 'participante' || userRole === 'invitado' || userRole === 'juez') && eventDetail.estado !== 'abierto') {
                 alert('Solo se puede acceder a eventos en curso.');
                 window.location.href = 'eventos.html';
                 return;
@@ -319,12 +326,28 @@
             if (eqError) console.error('Error cargando equipos:', eqError);
             teams = eqData || [];
 
-            // Configurar textos dinámicos si es Invitado
-            if (userRole === 'invitado') {
+            // Obtener conteo de participantes reales desde la base de datos
+            const { data: partData } = await supabase
+                .from('usuarios')
+                .select('id, equipo_id')
+                .eq('rol', 'participante');
+            
+            participantCounts = {};
+            teams.forEach(t => { participantCounts[t.id] = 0; });
+            if (partData) {
+                partData.forEach(p => {
+                    if (p.equipo_id && participantCounts[p.equipo_id] !== undefined) {
+                        participantCounts[p.equipo_id]++;
+                    }
+                });
+            }
+
+            // Configurar textos dinámicos si es Participante / Invitado
+            if (userRole === 'participante' || userRole === 'invitado') {
                 const joinedTeamId = localStorage.getItem(`joined_team_${eventId}`);
                 const joinedTeam = teams.find(t => t.id === joinedTeamId);
                 identityBadge.textContent = `Equipo: ${joinedTeam ? joinedTeam.nombre : 'Ninguno'}`;
-                document.getElementById('table-subtitle').textContent = 'Rellena las puntuaciones de cada prueba (1 a 5 puntos).';
+                document.getElementById('table-subtitle').textContent = 'Rellena tu voto para la primera prueba (1 a 5 puntos). Las demás pruebas son puntuadas por los jueces.';
             }
 
             // 4. Obtener todas las puntuaciones de este evento (de todas las pruebas de este evento)
@@ -434,40 +457,46 @@
                 .filter(code => code.startsWith('DIVERXIAJUEZ'))
                 .map(code => userMap[code]);
 
-            let totalGuests = 0;
-            teams.forEach(t => {
-                const hashInput = t.id.replace(/-/g, '').substring(0, 4);
-                let count = (parseInt(hashInput, 16) % 5) + 3;
-                if (t.id === localStorage.getItem(`joined_team_${eventId}`)) {
-                    count += 1;
+            const trialIndex = trials.findIndex(t => t.id === trialId);
+            if (trialIndex === 0) {
+                // Prueba 1: media propia (media de participantes y media de jueces)
+                const totalGuests = participantCounts[teamId] || 0;
+
+                const guestScores = scores.filter(s => 
+                    s.equipo_id === teamId && 
+                    s.prueba_id === trialId && 
+                    !judgeUuids.includes(s.de_usuario) && 
+                    s.de_usuario !== userMap['admin']
+                );
+                
+                let guestScorePart = 5;
+                if (totalGuests > 0) {
+                    const missingGuestVotesCount = Math.max(0, totalGuests - guestScores.length);
+                    const X = guestScores.reduce((sum, s) => sum + parseInt(s.valor || 0), 0) + (missingGuestVotesCount * 5);
+                    guestScorePart = X / totalGuests;
                 }
-                totalGuests += count;
-            });
-            totalGuests = Math.max(1, totalGuests);
 
-            const guestScores = scores.filter(s => 
-                s.equipo_id === teamId && 
-                s.prueba_id === trialId && 
-                !judgeUuids.includes(s.de_usuario) && 
-                s.de_usuario !== userMap['admin']
-            );
-            
-            const missingGuestVotesCount = Math.max(0, totalGuests - guestScores.length);
-            const X = guestScores.reduce((sum, s) => sum + parseInt(s.valor || 0), 0) + (missingGuestVotesCount * 5);
-            const guestScorePart = X / totalGuests;
+                const judgeScores = scores.filter(s => 
+                    s.equipo_id === teamId && 
+                    s.prueba_id === trialId && 
+                    judgeUuids.includes(s.de_usuario)
+                );
+                
+                const expectedJudgesCount = eventDetail?.num_jueces || 5;
+                const missingJudgeVotesCount = Math.max(0, expectedJudgesCount - judgeScores.length);
+                const Y_sum = judgeScores.reduce((sum, s) => sum + parseInt(s.valor || 0), 0) + (missingJudgeVotesCount * 5);
+                const Y = Y_sum / expectedJudgesCount;
 
-            const judgeScores = scores.filter(s => 
-                s.equipo_id === teamId && 
-                s.prueba_id === trialId && 
-                judgeUuids.includes(s.de_usuario)
-            );
-            
-            const expectedJudgesCount = Math.max(1, judgeUuids.length || 5);
-            const missingJudgeVotesCount = Math.max(0, expectedJudgesCount - judgeScores.length);
-            const Y_sum = judgeScores.reduce((sum, s) => sum + parseInt(s.valor || 0), 0) + (missingJudgeVotesCount * 5);
-            const Y = Y_sum / expectedJudgesCount;
-
-            return (guestScorePart + Y) / 2;
+                return (guestScorePart + Y) / 2;
+            } else {
+                // Pruebas 2 en adelante: sumatorio de puntos de jueces
+                const judgeScores = scores.filter(s => 
+                    s.equipo_id === teamId && 
+                    s.prueba_id === trialId && 
+                    judgeUuids.includes(s.de_usuario)
+                );
+                return judgeScores.reduce((sum, s) => sum + parseInt(s.valor || 0), 0);
+            }
         }
 
         // Renderizar Tabla de Puntuaciones
@@ -589,18 +618,21 @@
                 headerRow.appendChild(th);
             });
 
-            // Columna de Total al final
-            const thTotal = document.createElement('th');
-            thTotal.textContent = 'Total';
-            headerRow.appendChild(thTotal);
+            // Columna de Total al final (solo visible para admin y juez)
+            const showTotal = (userRole === 'admin' || userRole === 'juez');
+            if (showTotal) {
+                const thTotal = document.createElement('th');
+                thTotal.textContent = 'Total';
+                headerRow.appendChild(thTotal);
+            }
 
             // 2. Añadir filas de equipos
             teams.forEach(team => {
                 const tr = document.createElement('tr');
                 tr.dataset.teamId = team.id;
 
-                // Resaltar el equipo del invitado
-                if (userRole === 'invitado' && team.id === joinedTeamId) {
+                // Resaltar el equipo del participante
+                if ((userRole === 'participante' || userRole === 'invitado') && team.id === joinedTeamId) {
                     tr.classList.add('my-team-row');
                 }
 
@@ -611,7 +643,7 @@
                 tr.appendChild(tdName);
 
                 // Columnas de puntuaciones para cada prueba
-                trials.forEach(trial => {
+                trials.forEach((trial, trialIndex) => {
                     const tdScore = document.createElement('td');
                     const isBlocked = isTrialBlocked(trial.id);
                     
@@ -622,15 +654,18 @@
                     // Crear campo de entrada para la puntuación
                     const input = document.createElement('input');
                     input.type = 'number';
-                    input.min = '1';
-                    input.max = '5';
+                    input.min = (trialIndex === 0) ? '1' : '0';
+                    input.max = (trialIndex === 0) ? '5' : '1000';
                     input.step = '1';
                     input.className = 'table-score-input';
                     input.value = val;
                     
-                    // Solo permitir edición si el evento está abierto, la prueba no está bloqueada y no es el propio equipo del invitado (un equipo no se puede votar a sí mismo)
-                    const isSelfVoting = (userRole === 'invitado' && team.id === joinedTeamId);
-                    if (eventDetail.estado !== 'abierto' || isBlocked || isSelfVoting) {
+                    // Solo permitir edición si el evento está abierto, la prueba no está bloqueada, no es el propio equipo del participante,
+                    // y los participantes solo pueden votar en la primera prueba (trialIndex === 0)
+                    const isSelfVoting = ((userRole === 'participante' || userRole === 'invitado') && team.id === joinedTeamId);
+                    const isRestrictedForGuest = ((userRole === 'participante' || userRole === 'invitado') && trialIndex > 0);
+
+                    if (eventDetail.estado !== 'abierto' || isBlocked || isSelfVoting || isRestrictedForGuest) {
                         input.disabled = true;
                         if (isBlocked) {
                             input.classList.add('locked-input');
@@ -641,6 +676,11 @@
                             tdScore.classList.add('locked-cell');
                             input.placeholder = '🏠';
                             input.title = 'No puedes votar a tu propio equipo';
+                        } else if (isRestrictedForGuest) {
+                            input.classList.add('locked-input');
+                            tdScore.classList.add('locked-cell');
+                            input.placeholder = 'Juez';
+                            input.title = 'Solo los jueces pueden puntuar esta prueba';
                         }
                     }
 
@@ -651,8 +691,10 @@
                             await deleteOrSaveScore(team.id, trial.id, null);
                         } else {
                             let numericVal = parseInt(enteredVal);
-                            if (isNaN(numericVal)) numericVal = 1;
-                            numericVal = Math.min(5, Math.max(1, numericVal));
+                            if (isNaN(numericVal)) numericVal = (trialIndex === 0) ? 1 : 0;
+                            const minVal = (trialIndex === 0) ? 1 : 0;
+                            const maxVal = (trialIndex === 0) ? 5 : 1000;
+                            numericVal = Math.min(maxVal, Math.max(minVal, numericVal));
                             input.value = numericVal;
                             await deleteOrSaveScore(team.id, trial.id, numericVal);
                         }
@@ -664,19 +706,22 @@
                     tr.appendChild(tdScore);
                 });
 
-                // Calcular total oficial para esta fila usando la fórmula combinada
-                let totalScore = 0;
-                trials.forEach(trial => {
-                    totalScore += calculateTeamTrialScore(team.id, trial.id);
-                });
+                if (showTotal) {
+                    // Calcular total oficial para esta fila usando la fórmula combinada
+                    let totalScore = 0;
+                    trials.forEach(trial => {
+                        totalScore += calculateTeamTrialScore(team.id, trial.id);
+                    });
 
-                // Columna total
-                const tdTotal = document.createElement('td');
-                tdTotal.className = 'row-total-score';
-                tdTotal.textContent = totalScore.toFixed(2);
-                tdTotal.style.fontWeight = 'bold';
-                tdTotal.style.color = (userRole === 'invitado' && team.id === joinedTeamId) ? '#ffffff' : 'var(--primary)';
-                tr.appendChild(tdTotal);
+                    // Columna total
+                    const tdTotal = document.createElement('td');
+                    const joinedTeamId = localStorage.getItem(`joined_team_${eventId}`);
+                    tdTotal.className = 'row-total-score';
+                    tdTotal.textContent = totalScore.toFixed(2);
+                    tdTotal.style.fontWeight = 'bold';
+                    tdTotal.style.color = ((userRole === 'participante' || userRole === 'invitado') && team.id === joinedTeamId) ? '#ffffff' : 'var(--primary)';
+                    tr.appendChild(tdTotal);
+                }
 
                 bodyRows.appendChild(tr);
             });
@@ -740,12 +785,14 @@
 
         // Recalcular total oficial de una fila en tiempo real
         function updateRowTotal(tr) {
+            const totalEl = tr.querySelector('.row-total-score');
+            if (!totalEl) return;
             const teamId = tr.dataset.teamId;
             let total = 0;
             trials.forEach(trial => {
                 total += calculateTeamTrialScore(teamId, trial.id);
             });
-            tr.querySelector('.row-total-score').textContent = total.toFixed(2);
+            totalEl.textContent = total.toFixed(2);
         }
 
         // Calcular y Renderizar el Ranking (Pestaña 2)
@@ -787,7 +834,7 @@
                 }
 
                 // Resaltar equipo del invitado si coincide
-                if (userRole === 'invitado' && teamScore.id === joinedTeamId) {
+                if ((userRole === 'participante' || userRole === 'invitado') && teamScore.id === joinedTeamId) {
                     tr.classList.add('my-team-row');
                 }
 
@@ -844,13 +891,6 @@
             const currentJoinedId = localStorage.getItem(`joined_team_${eventId}`);
 
             teams.forEach(team => {
-                const hashInput = team.id.replace(/-/g, '').substring(0, 4);
-                let baseCount = (parseInt(hashInput, 16) % 5) + 3;
-                
-                if (team.id === currentJoinedId) {
-                    baseCount += 1;
-                }
-
                 const item = document.createElement('div');
                 item.style.display = 'flex';
                 item.style.justifyContent = 'space-between';
@@ -864,7 +904,6 @@
                 item.innerHTML = `
                     <div style="display: flex; flex-direction: column;">
                         <span style="font-weight: 600; font-size: 1.05rem; color: #ffffff;">${team.nombre} ${team.id === currentJoinedId ? '<span style="font-size: 0.8rem; color: var(--primary); margin-left: 5px;">(Tu Equipo)</span>' : ''}</span>
-                        <span style="font-size: 0.85rem; color: rgba(255, 255, 255, 0.5);">Participantes: ${baseCount}</span>
                     </div>
                     <button class="btn-primary join-team-btn" style="padding: 6px 15px; font-size: 0.9rem; width: auto; margin: 0; border-radius: 6px; cursor: pointer; ${team.id === currentJoinedId ? 'background: rgba(255,255,255,0.1); border-color: rgba(255,255,255,0.2); color: rgba(255,255,255,0.5); cursor: default;' : ''}">${team.id === currentJoinedId ? 'Unido' : 'Seleccionar'}</button>
                 `;
@@ -881,12 +920,18 @@
                         item.style.boxShadow = 'none';
                     });
 
-                    item.querySelector('.join-team-btn').addEventListener('click', () => {
+                    item.querySelector('.join-team-btn').addEventListener('click', async () => {
                         localStorage.setItem(`joined_team_${eventId}`, team.id);
+                        if (userUuid) {
+                            const { error: updateError } = await supabase
+                                .from('usuarios')
+                                .update({ equipo_id: team.id })
+                                .eq('id', userUuid);
+                            if (updateError) console.error('Error al actualizar equipo del usuario:', updateError);
+                        }
                         guestTeamModal.close();
                         identityBadge.textContent = `Equipo: ${team.nombre}`;
-                        renderScoresTable();
-                        calculateAndRenderRanking();
+                        await loadEventData();
                     });
                 }
 
