@@ -17,27 +17,13 @@ export async function fetchUserMap() {
             userMap['admin'] = u.id;
         } else if (u.nombre && u.nombre.startsWith('Juez ')) {
             const num = parseInt(u.nombre.split(' ')[1]);
-            const code = `DIVERXIAJUEZ${num.toString().padStart(2, '0')}`;
-            userMap[code] = u.id;
+            if (!isNaN(num)) {
+                const code = `DIVERXIAJUEZ${num.toString().padStart(2, '0')}`;
+                userMap[code] = u.id;
+            }
         }
     });
-
-    // Mapeo de respaldo para evitar fallos si algún código no está registrado
-    const validUuids = data.map(u => u.id);
-    if (validUuids.length > 0) {
-        const fallback1 = validUuids[0];
-        const fallback2 = validUuids[1] || fallback1;
-        
-        const allCodes = ['admin'];
-        for (let i = 1; i <= 10; i++) {
-            allCodes.push(`DIVERXIAJUEZ${i.toString().padStart(2, '0')}`);
-        }
-        allCodes.forEach((code, index) => {
-            if (!userMap[code]) {
-                userMap[code] = index % 2 === 0 ? fallback1 : fallback2;
-            }
-        });
-    }
     
     return userMap;
 }
+

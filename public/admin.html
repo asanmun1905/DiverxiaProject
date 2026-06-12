@@ -164,7 +164,7 @@
     <script src="https://cdn.jsdelivr.net/npm/sortablejs@1.15.0/Sortable.min.js"></script>
     <script src="script.js"></script>
     <script type="module">
-        import { supabase } from './supabase-config.js';
+        import { supabase, fetchUserMap } from './supabase-config.js';
 
         const listEl          = document.getElementById('admin-events-list');
         const bulkDeleteBtn   = document.getElementById('bulk-delete-btn');
@@ -258,7 +258,11 @@
 
                     // Insertar bloqueos para pruebas 2 en adelante por defecto
                     const { data: { user } } = await supabase.auth.getUser();
-                    const adminUuid = user ? user.id : null;
+                    let adminUuid = user ? user.id : null;
+                    if (!adminUuid) {
+                        const userMap = await fetchUserMap();
+                        adminUuid = userMap['admin'];
+                    }
                     if (insertedTrials && insertedTrials.length > 1 && adminUuid) {
                         insertedTrials.sort((a, b) => a.nombre.localeCompare(b.nombre, 'es'));
                         const blocksToInsert = [];

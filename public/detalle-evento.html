@@ -175,11 +175,6 @@
             identityBadge.textContent = 'Modo: Administrador';
         } else if (userRole === 'participante' || userRole === 'invitado') {
             btnChangeTeam.style.display = 'inline-block';
-            // Ocultar ranking tab button
-            setTimeout(() => {
-                const rankingTabBtn = document.querySelector('.tab-btn[data-tab="tab-ranking"]');
-                if (rankingTabBtn) rankingTabBtn.style.display = 'none';
-            }, 0);
         } else {
             identityBadge.textContent = `Juez: ${judgeCode}`;
         }
@@ -209,25 +204,18 @@
             });
         });
 
+        function generateUUID() {
+            return ([1e7]+-1e3+-4e3+-8e3+-1e11).replace(/[018]/g, c =>
+                (c ^ crypto.getRandomValues(new Uint8Array(1))[0] & 15 >> c / 4).toString(16)
+            );
+        }
+
         async function getOrCreateGuestUser() {
             let guestUuid = localStorage.getItem('guest_user_uuid');
             if (guestUuid) return guestUuid;
 
             const randomStr = Math.random().toString(36).substring(2, 10);
-            const email = `guest_${randomStr}@diverxia.com`;
-            const password = 'Juegodetronos';
-
-            const { data, error } = await supabase.auth.signUp({
-                email,
-                password
-            });
-
-            if (error) {
-                console.error('Error signing up guest:', error);
-                return null;
-            }
-
-            const userId = data.user.id;
+            const userId = generateUUID();
             const joinedTeamId = localStorage.getItem(`joined_team_${eventId}`) || null;
 
             const { error: dbError } = await supabase
@@ -274,8 +262,14 @@
             }
             eventDetail = evData;
 
-            // Restringir el acceso a participantes, invitados y jueces a eventos que no estén en curso
-            if ((userRole === 'participante' || userRole === 'invitado' || userRole === 'juez') && eventDetail.estado !== 'abierto') {
+            // Restringir el acceso a participantes, invitados y jueces a eventos que no estén en curso o activos
+            if ((userRole === 'participante' || userRole === 'invitado') && 
+                (eventDetail.estado !== 'abierto' || getStatus(eventDetail.fecha, eventDetail.fecha_fin) !== 'active')) {
+                alert('Este evento no está activo o ya ha finalizado.');
+                window.location.href = 'eventos.html';
+                return;
+            }
+            if (userRole === 'juez' && eventDetail.estado !== 'abierto') {
                 alert('Solo se puede acceder a eventos en curso.');
                 window.location.href = 'eventos.html';
                 return;
@@ -414,6 +408,64 @@
             renderScoresTable();
         }
 
+        async function reloadEventInfo() {
+            const { data: evData, error: evError } = await supabase
+                .from('eventos')
+                .select('*')
+                .eq('id', eventId)
+                .single();
+
+            if (evError || !evData) {
+                // Si el evento fue borrado, redirigimos
+                alert('El evento ha sido eliminado por el administrador.');
+                window.location.href = 'eventos.html';
+                return;
+            }
+
+            eventDetail = evData;
+
+            // Restringir el acceso a participantes, invitados y jueces a eventos que no estén en curso o activos
+            if ((userRole === 'participante' || userRole === 'invitado') && 
+                (eventDetail.estado !== 'abierto' || getStatus(eventDetail.fecha, eventDetail.fecha_fin) !== 'active')) {
+                alert('Este evento no está activo o ya ha finalizado.');
+                window.location.href = 'eventos.html';
+                return;
+            }
+            if (userRole === 'juez' && eventDetail.estado !== 'abierto') {
+                alert('El evento ya no está en curso.');
+                window.location.href = 'eventos.html';
+                return;
+            }
+
+            // Renderizar info del evento
+            document.getElementById('event-title').textContent = eventDetail.nombre;
+            document.getElementById('event-desc').textContent = eventDetail.descripcion || 'Sin descripción';
+            
+            // Fechas
+            const d1 = parseDate(eventDetail.fecha);
+            const rangeStr = eventDetail.fecha_fin 
+                ? `${d1.toLocaleDateString('es-ES', { day: '2-digit', month: 'short' })} - ${parseDate(eventDetail.fecha_fin).toLocaleDateString('es-ES', { day: '2-digit', month: 'short', year: 'numeric' })}`
+                : d1.toLocaleDateString('es-ES', { day: '2-digit', month: 'short', year: 'numeric' });
+            document.getElementById('event-dates-range').textContent = rangeStr;
+
+            // Badge de estado
+            const badge = document.getElementById('event-status-badge');
+            const state = eventDetail.estado || 'abierto';
+            badge.textContent = state.toUpperCase();
+            if (state === 'abierto') {
+                badge.style.background = 'rgba(74, 222, 128, 0.15)';
+                badge.style.color = '#4ade80';
+                badge.style.border = '1px solid rgba(74, 222, 128, 0.3)';
+            } else {
+                badge.style.background = 'rgba(235, 235, 235, 0.1)';
+                badge.style.color = 'rgba(235, 235, 235, 0.5)';
+                badge.style.border = '1px solid rgba(235, 235, 235, 0.2)';
+            }
+
+            // Volver a renderizar la tabla por si cambió el estado de habilitación/deshabilitación de inputs
+            renderScoresTable();
+        }
+
         function setupRealtimeSubscription() {
             supabase
                 .channel('db-changes')
@@ -421,15 +473,27 @@
                     console.log('Cambio detectado en puntuaciones:', payload);
                     await reloadScores();
                 })
+                .on('postgres_changes', { event: '*', schema: 'public', table: 'eventos', filter: `id=eq.${eventId}` }, async (payload) => {
+                    console.log('Cambio detectado en evento:', payload);
+                    await reloadEventInfo();
+                })
                 .subscribe();
 
             // Sondeo periódico cada 4 segundos como fallback
             setInterval(async () => {
                 await reloadScores();
+                await reloadEventInfo();
             }, 4000);
         }
 
         async function reloadScores() {
+            // Si el usuario está escribiendo activamente en un input de puntuación,
+            // no recargamos la tabla para evitar que se le borre lo que está escribiendo
+            const activeEl = document.activeElement;
+            if (activeEl && activeEl.classList.contains('table-score-input')) {
+                return;
+            }
+
             const trialIds = trials.map(t => t.id);
             if (trialIds.length > 0) {
                 const { data: scData, error: scError } = await supabase
@@ -453,47 +517,55 @@
         }
 
         function calculateTeamTrialScore(teamId, trialId) {
-            const judgeUuids = Object.keys(userMap)
-                .filter(code => code.startsWith('DIVERXIAJUEZ'))
-                .map(code => userMap[code]);
+            // Obtener UUIDs de jueces reales (sin duplicados)
+            const judgeUuids = [...new Set(
+                Object.keys(userMap)
+                    .filter(code => code.startsWith('DIVERXIAJUEZ'))
+                    .map(code => userMap[code])
+                    .filter(uuid => uuid && uuid !== userMap['admin'])
+            )];
 
             const trialIndex = trials.findIndex(t => t.id === trialId);
             if (trialIndex === 0) {
-                // Prueba 1: media propia (media de participantes y media de jueces)
-                const totalGuests = participantCounts[teamId] || 0;
-
-                const guestScores = scores.filter(s => 
-                    s.equipo_id === teamId && 
-                    s.prueba_id === trialId && 
-                    !judgeUuids.includes(s.de_usuario) && 
+                // Prueba 1: media de (media participantes + media jueces)
+                const guestScores = scores.filter(s =>
+                    s.equipo_id === teamId &&
+                    s.prueba_id === trialId &&
+                    s.equipo_id !== null &&
+                    !judgeUuids.includes(s.de_usuario) &&
                     s.de_usuario !== userMap['admin']
                 );
-                
-                let guestScorePart = 5;
-                if (totalGuests > 0) {
-                    const missingGuestVotesCount = Math.max(0, totalGuests - guestScores.length);
-                    const X = guestScores.reduce((sum, s) => sum + parseInt(s.valor || 0), 0) + (missingGuestVotesCount * 5);
-                    guestScorePart = X / totalGuests;
-                }
 
-                const judgeScores = scores.filter(s => 
-                    s.equipo_id === teamId && 
-                    s.prueba_id === trialId && 
-                    judgeUuids.includes(s.de_usuario)
+                // Puntuación media de jueces
+                const judgeScores = scores.filter(s =>
+                    s.equipo_id === teamId &&
+                    s.prueba_id === trialId &&
+                    (judgeUuids.includes(s.de_usuario) || s.de_usuario === userMap['admin'])
                 );
-                
-                const expectedJudgesCount = eventDetail?.num_jueces || 5;
-                const missingJudgeVotesCount = Math.max(0, expectedJudgesCount - judgeScores.length);
-                const Y_sum = judgeScores.reduce((sum, s) => sum + parseInt(s.valor || 0), 0) + (missingJudgeVotesCount * 5);
-                const Y = Y_sum / expectedJudgesCount;
 
-                return (guestScorePart + Y) / 2;
+                const X = guestScores.length > 0 
+                    ? guestScores.reduce((sum, s) => sum + parseInt(s.valor || 0), 0) / guestScores.length 
+                    : null;
+
+                const Y = judgeScores.length > 0 
+                    ? judgeScores.reduce((sum, s) => sum + parseInt(s.valor || 0), 0) / judgeScores.length 
+                    : null;
+
+                if (X !== null && Y !== null) {
+                    return (X + Y) / 2;
+                } else if (Y !== null) {
+                    return Y;
+                } else if (X !== null) {
+                    return X;
+                }
+                return 0;
             } else {
-                // Pruebas 2 en adelante: sumatorio de puntos de jueces
-                const judgeScores = scores.filter(s => 
-                    s.equipo_id === teamId && 
-                    s.prueba_id === trialId && 
-                    judgeUuids.includes(s.de_usuario)
+                // Pruebas 2 en adelante: sumatorio de puntos de jueces (sin duplicados)
+                const judgeScores = scores.filter(s =>
+                    s.equipo_id === teamId &&
+                    s.prueba_id === trialId &&
+                    s.equipo_id !== null &&
+                    (judgeUuids.includes(s.de_usuario) || s.de_usuario === userMap['admin'])
                 );
                 return judgeScores.reduce((sum, s) => sum + parseInt(s.valor || 0), 0);
             }
@@ -504,6 +576,25 @@
             const headerRow = document.getElementById('table-header-row');
             const bodyRows = document.getElementById('table-body-rows');
             const joinedTeamId = localStorage.getItem(`joined_team_${eventId}`);
+
+            // Guardar el foco activo antes de regenerar la tabla
+            const activeEl = document.activeElement;
+            let activeTeamId = null;
+            let activeTrialId = null;
+            let activeCursorPos = 0;
+            if (activeEl && activeEl.classList.contains('table-score-input')) {
+                const tr = activeEl.closest('tr');
+                activeTeamId = tr ? tr.dataset.teamId : null;
+                const td = activeEl.closest('td');
+                if (tr && td) {
+                    const cells = Array.from(tr.cells);
+                    const cellIdx = cells.indexOf(td);
+                    if (cellIdx > 0 && trials[cellIdx - 1]) {
+                        activeTrialId = trials[cellIdx - 1].id;
+                    }
+                }
+                activeCursorPos = activeEl.selectionStart || 0;
+            }
 
             // Limpiar cabecera y cuerpo
             headerRow.innerHTML = '<th>Equipos</th>';
@@ -601,25 +692,14 @@
 
                     adminActionsRow.appendChild(btnClear);
                     container.appendChild(adminActionsRow);
-                } else {
-                    if (isBlocked) {
-                        const badge = document.createElement('span');
-                        badge.className = 'trial-locked-badge';
-                        badge.innerHTML = `
-                            <svg viewBox="0 0 24 24" fill="currentColor">
-                                <path d="M18 8h-1V6c0-2.76-2.24-5-5-5S7 3.24 7 6v2H6c-1.1 0-2 .9-2 2v10c0 1.1.9 2 2 2h12c1.1 0 2-.9 2-2V10c0-1.1-.9-2-2-2zm-6 9c-1.1 0-2-.9-2-2s.9-2 2-2 2 .9 2 2-.9 2-2 2zm3.1-9H8.9V6c0-1.71 1.39-3.1 3.1-3.1 1.71 0 3.1 1.39 3.1 3.1v2z"/>
-                            </svg> Bloqueada
-                        `;
-                        container.appendChild(badge);
-                    }
                 }
                 
                 th.appendChild(container);
                 headerRow.appendChild(th);
             });
 
-            // Columna de Total al final (solo visible para admin y juez)
-            const showTotal = (userRole === 'admin' || userRole === 'juez');
+            // Columna de Total al final
+            const showTotal = true;
             if (showTotal) {
                 const thTotal = document.createElement('th');
                 thTotal.textContent = 'Total';
@@ -695,7 +775,13 @@
                             input.value = numericVal;
                             await deleteOrSaveScore(team.id, trial.id, numericVal);
                         }
-                        updateRowTotal(tr);
+                        // Redibujar tabla completa para actualizar totales
+                        renderScoresTable();
+                        // Actualizar ranking si está activo
+                        const rankingTab = document.querySelector('.tab-btn[data-tab="tab-ranking"]');
+                        if (rankingTab && rankingTab.classList.contains('active')) {
+                            calculateAndRenderRanking();
+                        }
                     });
 
                     tdScore.appendChild(input);
@@ -722,6 +808,24 @@
 
                 bodyRows.appendChild(tr);
             });
+
+            // Restaurar el foco si correspondía a un input
+            if (activeTeamId && activeTrialId) {
+                const targetTr = bodyRows.querySelector(`tr[data-team-id="${activeTeamId}"]`);
+                if (targetTr) {
+                    const trialIdx = trials.findIndex(t => t.id === activeTrialId);
+                    if (trialIdx !== -1) {
+                        const inputs = targetTr.querySelectorAll('.table-score-input');
+                        const targetInput = inputs[trialIdx];
+                        if (targetInput && !targetInput.disabled) {
+                            targetInput.focus();
+                            try {
+                                targetInput.setSelectionRange(activeCursorPos, activeCursorPos);
+                            } catch (e) {}
+                        }
+                    }
+                }
+            }
         }
 
         // Función para guardar puntuación (Insert/Update)
@@ -780,16 +884,19 @@
             }
         }
 
-        // Recalcular total oficial de una fila en tiempo real
-        function updateRowTotal(tr) {
-            const totalEl = tr.querySelector('.row-total-score');
-            if (!totalEl) return;
-            const teamId = tr.dataset.teamId;
-            let total = 0;
-            trials.forEach(trial => {
-                total += calculateTeamTrialScore(teamId, trial.id);
+        // Recalcular todos los totales de la tabla tras guardar una puntuación
+        function updateAllTotals() {
+            const bodyRows = document.getElementById('table-body-rows');
+            bodyRows.querySelectorAll('tr[data-team-id]').forEach(tr => {
+                const totalEl = tr.querySelector('.row-total-score');
+                if (!totalEl) return;
+                const teamId = tr.dataset.teamId;
+                let total = 0;
+                trials.forEach(trial => {
+                    total += calculateTeamTrialScore(teamId, trial.id);
+                });
+                totalEl.textContent = total.toFixed(2);
             });
-            totalEl.textContent = total.toFixed(2);
         }
 
         // Calcular y Renderizar el Ranking (Pestaña 2)

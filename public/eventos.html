@@ -111,7 +111,10 @@
             }
             
             const userRole = localStorage.getItem('role');
-            if (userRole === 'participante' || userRole === 'invitado' || userRole === 'juez') {
+            if (userRole === 'participante' || userRole === 'invitado') {
+                // Participantes/invitados solo ven eventos abiertos y activos en fecha
+                events = data.filter(ev => ev.estado === 'abierto' && getStatus(ev.fecha, ev.fecha_fin) === 'active');
+            } else if (userRole === 'juez') {
                 events = data.filter(ev => ev.estado === 'abierto');
             } else {
                 events = data;
@@ -128,16 +131,27 @@
             return new Date(y, m - 1, d);
         }
 
-        function formatDate(str) {
-            const d = parseDate(str);
-            return d.toLocaleDateString('es-ES', { day: '2-digit', month: 'short', year: 'numeric' });
+        function formatDate(inicio, fin) {
+            const d1 = parseDate(inicio);
+            const s1 = d1.toLocaleDateString('es-ES', { day: '2-digit', month: 'short' });
+            
+            if (!fin || fin === inicio) {
+                return d1.toLocaleDateString('es-ES', { day: '2-digit', month: 'short', year: 'numeric' });
+            }
+
+            const d2 = parseDate(fin);
+            const s2 = d2.toLocaleDateString('es-ES', { day: '2-digit', month: 'short', year: 'numeric' });
+            
+            return `${s1} - ${s2}`;
         }
 
-        function getStatus(fecha) {
-            const f = parseDate(fecha);
-            if (f < today) return 'past';
-            if (f.toDateString() === today.toDateString()) return 'active';
-            return 'upcoming';
+        function getStatus(inicio, fin) {
+            const fStart = parseDate(inicio);
+            const fEnd   = fin ? parseDate(fin) : fStart;
+
+            if (today < fStart) return 'upcoming';
+            if (today > fEnd)   return 'past';
+            return 'active';
         }
 
         function statusLabel(status) {
@@ -167,7 +181,7 @@
             }
 
             sorted.forEach(ev => {
-                const status = getStatus(ev.fecha);
+                const status = getStatus(ev.fecha, ev.fecha_fin);
                 const sl = statusLabel(status);
 
                 const card = document.createElement('div');
@@ -178,7 +192,7 @@
                         <div class="event-category">${ev.descripcion || ''}</div>
                     </div>
                     <div class="event-dates">
-                        <div class="event-date-range">${formatDate(ev.fecha)}</div>
+                        <div class="event-date-range">${formatDate(ev.fecha, ev.fecha_fin)}</div>
                         <div class="event-status ${sl.cls}">${sl.label}</div>
                     </div>
                 `;
@@ -317,7 +331,23 @@
             });
         });
 
+        function setupRealtimeSubscription() {
+            supabase
+                .channel('eventos-changes')
+                .on('postgres_changes', { event: '*', schema: 'public', table: 'eventos' }, async (payload) => {
+                    console.log('Cambio detectado en eventos:', payload);
+                    await fetchEvents();
+                })
+                .subscribe();
+
+            // Sondeo periódico cada 4 segundos como fallback
+            setInterval(async () => {
+                await fetchEvents();
+            }, 4000);
+        }
+
         fetchEvents();
+        setupRealtimeSubscription();
     </script>
 </body>
 </html>
